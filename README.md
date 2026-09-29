@@ -14,7 +14,7 @@ npm install
 npm run dev
 ```
 
-Abre la URL que muestra Vite (por defecto http://localhost:5173). Deberías ver la escena de combate vacía con el número de héroes y clases cargados.
+Abre la URL que muestra Vite (por defecto http://localhost:5173). Empieza un combate de prueba: Hulk, Iron Man y Captain America contra Wolverine, Black Widow y Thor.
 
 ## Scripts
 
@@ -61,6 +61,18 @@ Blaster → Bruiser → Scrapper → Infiltrator → Tactician → Blaster
 | Generalist | — | — |
 
 Atacar con ventaja multiplica el daño por `advantageDamageMultiplier` y con desventaja por `disadvantageDamageMultiplier` (ver `data/classes.json`). Generalist nunca recibe ni aplica modificadores. Los valores numéricos son iniciales y se ajustarán al balancear.
+
+## Combate
+
+Cada ronda actúan primero tus héroes vivos, en orden, y luego los enemigos. En tu turno haces clic en una habilidad y, si es de un solo objetivo, en el enemigo al que quieres atacar (se resalta en amarillo). Los enemigos usan una IA sencilla: su habilidad usable más cara contra tu héroe con menos vida.
+
+- **Aguante**: cada habilidad cuesta aguante; se recuperan 10 puntos al empezar el turno propio.
+- **Cooldown**: tras usar una habilidad con cooldown N, queda bloqueada tus N turnos siguientes.
+- **Acierto**: depende de la precisión del atacante y la evasión del objetivo; un fallo anula el daño y los efectos.
+- **Daño**: tirada entre el mínimo y máximo de la habilidad, escalada por ataque y defensa y multiplicada por la ventaja de clase y los efectos activos.
+- **Efectos**: aturdido (pierde el turno), ataque+, defensa-, precisión+ y precisión-, sangrado (pierde vida cada turno) y regeneración (recupera vida cada turno). Un efecto de duración N afecta a los N turnos siguientes del objetivo.
+
+La lógica está en `src/core/battle.ts` y las cifras de balance en `BATTLE_RULES`, al principio de ese archivo. Son provisionales. De los bonus especiales de clase (`advantageBonus`) aún no hay ninguno implementado, solo el multiplicador de daño.
 
 ## Datos
 
