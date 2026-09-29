@@ -1,0 +1,351 @@
+{
+  "abilities": [
+    {
+      "id": "hulk_smash",
+      "heroId": "hulk",
+      "name": "Hulk Aplasta",
+      "type": "melee",
+      "target": "single_enemy",
+      "staminaCost": 0,
+      "cooldown": 0,
+      "damage": {
+        "min": 180,
+        "max": 240
+      },
+      "hits": 1,
+      "effects": [],
+      "description": "Golpe básico devastador."
+    },
+    {
+      "id": "hulk_thunderclap",
+      "heroId": "hulk",
+      "name": "Aplauso Trueno",
+      "type": "melee",
+      "target": "all_enemies",
+      "staminaCost": 40,
+      "cooldown": 2,
+      "damage": {
+        "min": 90,
+        "max": 130
+      },
+      "hits": 1,
+      "effects": [
+        {
+          "id": "stun",
+          "duration": 1,
+          "chance": 0.3
+        }
+      ],
+      "description": "Onda expansiva que golpea a todos los enemigos."
+    },
+    {
+      "id": "hulk_rage",
+      "heroId": "hulk",
+      "name": "Furia Creciente",
+      "type": "buff",
+      "target": "self",
+      "staminaCost": 30,
+      "cooldown": 3,
+      "damage": null,
+      "hits": 0,
+      "effects": [
+        {
+          "id": "attack_up",
+          "duration": 3,
+          "chance": 1
+        }
+      ],
+      "description": "Aumenta su ataque durante varios turnos."
+    },
+    {
+      "id": "iron_man_repulsor",
+      "heroId": "iron_man",
+      "name": "Rayo Repulsor",
+      "type": "ranged",
+      "target": "single_enemy",
+      "staminaCost": 0,
+      "cooldown": 0,
+      "damage": {
+        "min": 160,
+        "max": 210
+      },
+      "hits": 1,
+      "effects": [],
+      "description": "Disparo básico de repulsor."
+    },
+    {
+      "id": "iron_man_missiles",
+      "heroId": "iron_man",
+      "name": "Enjambre de Misiles",
+      "type": "ranged",
+      "target": "all_enemies",
+      "staminaCost": 45,
+      "cooldown": 2,
+      "damage": {
+        "min": 80,
+        "max": 120
+      },
+      "hits": 3,
+      "effects": [],
+      "description": "Lluvia de misiles sobre todo el equipo enemigo."
+    },
+    {
+      "id": "iron_man_unibeam",
+      "heroId": "iron_man",
+      "name": "Unirrayo",
+      "type": "ranged",
+      "target": "single_enemy",
+      "staminaCost": 60,
+      "cooldown": 3,
+      "damage": {
+        "min": 320,
+        "max": 420
+      },
+      "hits": 1,
+      "effects": [
+        {
+          "id": "defense_down",
+          "duration": 2,
+          "chance": 0.5
+        }
+      ],
+      "description": "Rayo concentrado del reactor de su pecho."
+    },
+    {
+      "id": "cap_shield_throw",
+      "heroId": "captain_america",
+      "name": "Lanzamiento de Escudo",
+      "type": "ranged",
+      "target": "single_enemy",
+      "staminaCost": 0,
+      "cooldown": 0,
+      "damage": {
+        "min": 140,
+        "max": 190
+      },
+      "hits": 1,
+      "effects": [],
+      "description": "Lanza el escudo y lo recupera."
+    },
+    {
+      "id": "cap_rally",
+      "heroId": "captain_america",
+      "name": "¡Avengers, reuníos!",
+      "type": "buff",
+      "target": "all_allies",
+      "staminaCost": 40,
+      "cooldown": 3,
+      "damage": null,
+      "hits": 0,
+      "effects": [
+        {
+          "id": "attack_up",
+          "duration": 2,
+          "chance": 1
+        },
+        {
+          "id": "accuracy_up",
+          "duration": 2,
+          "chance": 1
+        }
+      ],
+      "description": "Inspira al equipo."
+    },
+    {
+      "id": "cap_shield_bash",
+      "heroId": "captain_america",
+      "name": "Golpe de Escudo",
+      "type": "melee",
+      "target": "single_enemy",
+      "staminaCost": 35,
+      "cooldown": 2,
+      "damage": {
+        "min": 200,
+        "max": 260
+      },
+      "hits": 1,
+      "effects": [
+        {
+          "id": "stun",
+          "duration": 1,
+          "chance": 0.35
+        }
+      ],
+      "description": "Embestida con el escudo."
+    },
+    {
+      "id": "wolverine_slash",
+      "heroId": "wolverine",
+      "name": "Tajo de Garras",
+      "type": "melee",
+      "target": "single_enemy",
+      "staminaCost": 0,
+      "cooldown": 0,
+      "damage": {
+        "min": 60,
+        "max": 80
+      },
+      "hits": 3,
+      "effects": [],
+      "description": "Tres cortes rápidos."
+    },
+    {
+      "id": "wolverine_berserk",
+      "heroId": "wolverine",
+      "name": "Furia Berserker",
+      "type": "melee",
+      "target": "single_enemy",
+      "staminaCost": 50,
+      "cooldown": 3,
+      "damage": {
+        "min": 70,
+        "max": 95
+      },
+      "hits": 5,
+      "effects": [
+        {
+          "id": "bleed",
+          "duration": 3,
+          "chance": 0.5
+        }
+      ],
+      "description": "Ráfaga salvaje de cortes."
+    },
+    {
+      "id": "wolverine_healing",
+      "heroId": "wolverine",
+      "name": "Factor de Curación",
+      "type": "heal",
+      "target": "self",
+      "staminaCost": 30,
+      "cooldown": 3,
+      "damage": null,
+      "hits": 0,
+      "effects": [
+        {
+          "id": "regeneration",
+          "duration": 3,
+          "chance": 1
+        }
+      ],
+      "description": "Recupera vida cada turno."
+    },
+    {
+      "id": "widow_bite",
+      "heroId": "black_widow",
+      "name": "Picadura de la Viuda",
+      "type": "ranged",
+      "target": "single_enemy",
+      "staminaCost": 0,
+      "cooldown": 0,
+      "damage": {
+        "min": 140,
+        "max": 180
+      },
+      "hits": 1,
+      "effects": [
+        {
+          "id": "stun",
+          "duration": 1,
+          "chance": 0.15
+        }
+      ],
+      "description": "Descarga eléctrica de sus brazaletes."
+    },
+    {
+      "id": "widow_kick",
+      "heroId": "black_widow",
+      "name": "Patada Acrobática",
+      "type": "melee",
+      "target": "single_enemy",
+      "staminaCost": 30,
+      "cooldown": 1,
+      "damage": {
+        "min": 170,
+        "max": 230
+      },
+      "hits": 2,
+      "effects": [],
+      "description": "Combinación de patadas."
+    },
+    {
+      "id": "widow_smoke",
+      "heroId": "black_widow",
+      "name": "Bomba de Humo",
+      "type": "debuff",
+      "target": "all_enemies",
+      "staminaCost": 40,
+      "cooldown": 3,
+      "damage": null,
+      "hits": 0,
+      "effects": [
+        {
+          "id": "accuracy_down",
+          "duration": 2,
+          "chance": 1
+        }
+      ],
+      "description": "Reduce la precisión de los enemigos."
+    },
+    {
+      "id": "thor_mjolnir",
+      "heroId": "thor",
+      "name": "Golpe de Mjolnir",
+      "type": "melee",
+      "target": "single_enemy",
+      "staminaCost": 0,
+      "cooldown": 0,
+      "damage": {
+        "min": 170,
+        "max": 230
+      },
+      "hits": 1,
+      "effects": [],
+      "description": "Martillazo básico."
+    },
+    {
+      "id": "thor_lightning",
+      "heroId": "thor",
+      "name": "Relámpago",
+      "type": "ranged",
+      "target": "single_enemy",
+      "staminaCost": 40,
+      "cooldown": 2,
+      "damage": {
+        "min": 230,
+        "max": 300
+      },
+      "hits": 1,
+      "effects": [
+        {
+          "id": "stun",
+          "duration": 1,
+          "chance": 0.25
+        }
+      ],
+      "description": "Invoca un rayo sobre un enemigo."
+    },
+    {
+      "id": "thor_storm",
+      "heroId": "thor",
+      "name": "Tormenta de Asgard",
+      "type": "ranged",
+      "target": "all_enemies",
+      "staminaCost": 60,
+      "cooldown": 3,
+      "damage": {
+        "min": 120,
+        "max": 170
+      },
+      "hits": 1,
+      "effects": [
+        {
+          "id": "defense_down",
+          "duration": 2,
+          "chance": 0.4
+        }
+      ],
+      "description": "Tormenta que castiga a todos los enemigos."
+    }
+  ]
+}
