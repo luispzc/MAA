@@ -1,13 +1,14 @@
 import Phaser from 'phaser';
+import { preloadArt } from './battle/art';
 
-/** Carga inicial de recursos. De momento no hay assets; pasa directo al combate. */
+/** Carga inicial de recursos. El arte que falte se dibuja con marcadores (ver battle/art.ts). */
 export class BootScene extends Phaser.Scene {
   constructor() {
     super('Boot');
   }
 
   preload(): void {
-    // Aquí se cargarán sprites, sonidos y fuentes (public/assets).
+    preloadArt(this);
   }
 
   create(): void {
