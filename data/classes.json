@@ -1,0 +1,50 @@
+{
+  "rules": {
+    "advantageDamageMultiplier": 1.25,
+    "disadvantageDamageMultiplier": 0.75
+  },
+  "classes": [
+    {
+      "id": "blaster",
+      "name": "Blaster",
+      "description": "Ataques a distancia y de energía. Mantienen al enemigo lejos.",
+      "strongAgainst": "bruiser",
+      "advantageBonus": "Los ataques con ventaja no pueden ser esquivados."
+    },
+    {
+      "id": "bruiser",
+      "name": "Bruiser",
+      "description": "Fuerza bruta y mucha vida. Aguantan y golpean fuerte.",
+      "strongAgainst": "scrapper",
+      "advantageBonus": "Los ataques con ventaja tienen probabilidad de aturdir."
+    },
+    {
+      "id": "scrapper",
+      "name": "Scrapper",
+      "description": "Combate cuerpo a cuerpo rápido con varios golpes por turno.",
+      "strongAgainst": "infiltrator",
+      "advantageBonus": "Los ataques con ventaja rompen la guardia del objetivo."
+    },
+    {
+      "id": "infiltrator",
+      "name": "Infiltrator",
+      "description": "Sigilo, velocidad y ataques que debilitan al enemigo.",
+      "strongAgainst": "tactician",
+      "advantageBonus": "Los ataques con ventaja roban un beneficio del objetivo."
+    },
+    {
+      "id": "tactician",
+      "name": "Tactician",
+      "description": "Estrategas que potencian al equipo y controlan el combate.",
+      "strongAgainst": "blaster",
+      "advantageBonus": "Los ataques con ventaja dan un beneficio al equipo."
+    },
+    {
+      "id": "generalist",
+      "name": "Generalist",
+      "description": "Sin ventajas ni debilidades de clase. Estables contra cualquiera.",
+      "strongAgainst": null,
+      "advantageBonus": "Nunca recibe ni aplica modificadores de clase."
+    }
+  ]
+}
