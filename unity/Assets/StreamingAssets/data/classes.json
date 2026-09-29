@@ -1,0 +1,50 @@
+{
+  "rules": {
+    "advantageDamageMultiplier": 1.25,
+    "disadvantageDamageMultiplier": 0.75
+  },
+  "classes": [
+    {
+      "id": "blaster",
+      "name": "Blaster",
+      "description": "Daño a distancia.",
+      "strongAgainst": "bruiser",
+      "advantageBonus": "Provisional"
+    },
+    {
+      "id": "bruiser",
+      "name": "Bruiser",
+      "description": "Fuerza bruta y resistencia.",
+      "strongAgainst": "scrapper",
+      "advantageBonus": "Provisional"
+    },
+    {
+      "id": "scrapper",
+      "name": "Scrapper",
+      "description": "Luchador cuerpo a cuerpo agresivo.",
+      "strongAgainst": "infiltrator",
+      "advantageBonus": "Provisional"
+    },
+    {
+      "id": "infiltrator",
+      "name": "Infiltrator",
+      "description": "Sigilo y sabotaje.",
+      "strongAgainst": "tactician",
+      "advantageBonus": "Provisional"
+    },
+    {
+      "id": "tactician",
+      "name": "Tactician",
+      "description": "Estrategia y apoyo.",
+      "strongAgainst": "blaster",
+      "advantageBonus": "Provisional"
+    },
+    {
+      "id": "generalist",
+      "name": "Generalist",
+      "description": "Sin ventajas ni debilidades.",
+      "strongAgainst": null,
+      "advantageBonus": ""
+    }
+  ]
+}

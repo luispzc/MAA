@@ -1,0 +1,215 @@
+{
+  "abilities": [
+    {
+      "id": "repulsor",
+      "heroId": "iron-man",
+      "name": "Repulsor",
+      "type": "ranged",
+      "target": "single_enemy",
+      "staminaCost": 0,
+      "cooldown": 0,
+      "damage": {
+        "min": 12,
+        "max": 16
+      },
+      "hits": 1,
+      "effects": [],
+      "description": "Provisional."
+    },
+    {
+      "id": "unibeam",
+      "heroId": "iron-man",
+      "name": "Unibeam",
+      "type": "ranged",
+      "target": "single_enemy",
+      "staminaCost": 12,
+      "cooldown": 2,
+      "damage": {
+        "min": 26,
+        "max": 34
+      },
+      "hits": 1,
+      "effects": [],
+      "description": "Provisional."
+    },
+    {
+      "id": "hulk-smash",
+      "heroId": "hulk",
+      "name": "Hulk Smash",
+      "type": "melee",
+      "target": "single_enemy",
+      "staminaCost": 0,
+      "cooldown": 0,
+      "damage": {
+        "min": 13,
+        "max": 17
+      },
+      "hits": 1,
+      "effects": [],
+      "description": "Provisional."
+    },
+    {
+      "id": "thunderclap",
+      "heroId": "hulk",
+      "name": "Thunderclap",
+      "type": "melee",
+      "target": "all_enemies",
+      "staminaCost": 10,
+      "cooldown": 2,
+      "damage": {
+        "min": 12,
+        "max": 16
+      },
+      "hits": 1,
+      "effects": [],
+      "description": "Provisional."
+    },
+    {
+      "id": "widows-bite",
+      "heroId": "black-widow",
+      "name": "Widow's Bite",
+      "type": "ranged",
+      "target": "single_enemy",
+      "staminaCost": 0,
+      "cooldown": 0,
+      "damage": {
+        "min": 11,
+        "max": 15
+      },
+      "hits": 1,
+      "effects": [],
+      "description": "Provisional."
+    },
+    {
+      "id": "flurry",
+      "heroId": "black-widow",
+      "name": "Flurry",
+      "type": "melee",
+      "target": "single_enemy",
+      "staminaCost": 10,
+      "cooldown": 1,
+      "damage": {
+        "min": 8,
+        "max": 12
+      },
+      "hits": 3,
+      "effects": [],
+      "description": "Provisional."
+    },
+    {
+      "id": "claws",
+      "heroId": "wolverine",
+      "name": "Adamantium Claws",
+      "type": "melee",
+      "target": "single_enemy",
+      "staminaCost": 0,
+      "cooldown": 0,
+      "damage": {
+        "min": 13,
+        "max": 17
+      },
+      "hits": 1,
+      "effects": [],
+      "description": "Provisional."
+    },
+    {
+      "id": "berserker-rage",
+      "heroId": "wolverine",
+      "name": "Berserker Rage",
+      "type": "melee",
+      "target": "single_enemy",
+      "staminaCost": 12,
+      "cooldown": 2,
+      "damage": {
+        "min": 8,
+        "max": 11
+      },
+      "hits": 4,
+      "effects": [],
+      "description": "Provisional."
+    },
+    {
+      "id": "shield-bash",
+      "heroId": "captain-america",
+      "name": "Shield Bash",
+      "type": "melee",
+      "target": "single_enemy",
+      "staminaCost": 0,
+      "cooldown": 0,
+      "damage": {
+        "min": 11,
+        "max": 15
+      },
+      "hits": 1,
+      "effects": [],
+      "description": "Provisional."
+    },
+    {
+      "id": "rally",
+      "heroId": "captain-america",
+      "name": "Rally",
+      "type": "buff",
+      "target": "all_allies",
+      "staminaCost": 8,
+      "cooldown": 3,
+      "damage": null,
+      "hits": 1,
+      "effects": [
+        {
+          "id": "attack-up",
+          "duration": 2,
+          "chance": 1.0
+        }
+      ],
+      "description": "Provisional."
+    },
+    {
+      "id": "shield-throw",
+      "heroId": "captain-america",
+      "name": "Shield Throw",
+      "type": "ranged",
+      "target": "all_enemies",
+      "staminaCost": 10,
+      "cooldown": 2,
+      "damage": {
+        "min": 10,
+        "max": 14
+      },
+      "hits": 1,
+      "effects": [],
+      "description": "Provisional."
+    },
+    {
+      "id": "mjolnir-strike",
+      "heroId": "thor",
+      "name": "Mjolnir Strike",
+      "type": "melee",
+      "target": "single_enemy",
+      "staminaCost": 0,
+      "cooldown": 0,
+      "damage": {
+        "min": 13,
+        "max": 17
+      },
+      "hits": 1,
+      "effects": [],
+      "description": "Provisional."
+    },
+    {
+      "id": "god-of-thunder",
+      "heroId": "thor",
+      "name": "God of Thunder",
+      "type": "ranged",
+      "target": "all_enemies",
+      "staminaCost": 14,
+      "cooldown": 3,
+      "damage": {
+        "min": 14,
+        "max": 19
+      },
+      "hits": 1,
+      "effects": [],
+      "description": "Provisional."
+    }
+  ]
+}

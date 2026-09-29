@@ -1,0 +1,14 @@
+{
+    "name": "MAA.Runtime",
+    "rootNamespace": "MAA.Runtime",
+    "references": ["MAA.Core"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

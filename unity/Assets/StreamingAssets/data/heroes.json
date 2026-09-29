@@ -1,0 +1,113 @@
+{
+  "heroes": [
+    {
+      "id": "iron-man",
+      "name": "Iron Man",
+      "classId": "blaster",
+      "description": "Provisional.",
+      "baseStats": {
+        "health": 120,
+        "stamina": 30,
+        "attack": 14,
+        "defense": 10,
+        "accuracy": 12,
+        "evasion": 6
+      },
+      "abilityIds": [
+        "repulsor",
+        "unibeam"
+      ]
+    },
+    {
+      "id": "hulk",
+      "name": "Hulk",
+      "classId": "bruiser",
+      "description": "Provisional.",
+      "baseStats": {
+        "health": 170,
+        "stamina": 25,
+        "attack": 16,
+        "defense": 14,
+        "accuracy": 6,
+        "evasion": 2
+      },
+      "abilityIds": [
+        "hulk-smash",
+        "thunderclap"
+      ]
+    },
+    {
+      "id": "black-widow",
+      "name": "Black Widow",
+      "classId": "infiltrator",
+      "description": "Provisional.",
+      "baseStats": {
+        "health": 100,
+        "stamina": 35,
+        "attack": 12,
+        "defense": 8,
+        "accuracy": 14,
+        "evasion": 14
+      },
+      "abilityIds": [
+        "widows-bite",
+        "flurry"
+      ]
+    },
+    {
+      "id": "wolverine",
+      "name": "Wolverine",
+      "classId": "scrapper",
+      "description": "Provisional.",
+      "baseStats": {
+        "health": 140,
+        "stamina": 25,
+        "attack": 15,
+        "defense": 10,
+        "accuracy": 10,
+        "evasion": 8
+      },
+      "abilityIds": [
+        "claws",
+        "berserker-rage"
+      ]
+    },
+    {
+      "id": "captain-america",
+      "name": "Captain America",
+      "classId": "tactician",
+      "description": "Provisional.",
+      "baseStats": {
+        "health": 130,
+        "stamina": 30,
+        "attack": 12,
+        "defense": 14,
+        "accuracy": 12,
+        "evasion": 8
+      },
+      "abilityIds": [
+        "shield-bash",
+        "rally",
+        "shield-throw"
+      ]
+    },
+    {
+      "id": "thor",
+      "name": "Thor",
+      "classId": "generalist",
+      "description": "Provisional.",
+      "baseStats": {
+        "health": 150,
+        "stamina": 30,
+        "attack": 15,
+        "defense": 12,
+        "accuracy": 9,
+        "evasion": 5
+      },
+      "abilityIds": [
+        "mjolnir-strike",
+        "god-of-thunder"
+      ]
+    }
+  ]
+}
