@@ -1,31 +1,55 @@
-import type { Ability, ClassesFile, Hero } from '../../types/game';
+import type { Ability, AbilityProperty, ClassesFile, Hero, StatusDefinition } from '../../types/game';
 import { getDamageMultiplier, getMatchup } from '../classAdvantage';
 import { nextRandom } from './rng';
-import {
-  accuracyBonus,
-  addStatus,
-  attackModifier,
-  defenseModifier,
-  hasStatus,
-  TICK_FRACTION,
-} from './statuses';
-import type { Action, BattleEvent, BattleState, Combatant, Matchup, StatusId, TeamId } from './types';
+import { addStatus, hasFlag, hasStatus, isBuff, removeStatus, stacksOf, sumModifier } from './statuses';
+import type { Action, BattleEvent, BattleState, Combatant, Matchup, TeamId } from './types';
 
 export const TEAM_SIZE = 3;
 /** Fracción de la stamina máxima que se recupera al empezar cada turno. */
 export const STAMINA_REGEN_FRACTION = 0.1;
-export const CRIT_CHANCE = 0.1;
+/** Stamina extra (fracción de la máxima) que da Descansar. */
+export const REST_STAMINA_FRACTION = 0.25;
 export const CRIT_MULTIPLIER = 1.5;
+export const DEADLY_CRIT_MULTIPLIER = 2;
 export const MIN_HIT_CHANCE = 10;
-/** Precisión extra de base para que un héroe normal acierte la mayoría de golpes. */
-export const BASE_HIT_BONUS = 20;
+/** Fracción de la defensa que ignora Adamantium. */
+export const ADAMANTIUM_DEFENSE_IGNORED = 0.5;
+export const EXPLOIT_COMBO_BONUS = 0.5;
+export const EXPLOIT_BLEED_BONUS_PER_STACK = 0.25;
+export const ANGER_BONUS_PER_STACK = 0.15;
+
+/** Acción de reserva que siempre está disponible, para no quedarse sin opciones por falta de stamina. */
+export const REST_ABILITY: Ability = {
+  id: 'rest',
+  heroId: '',
+  name: 'Descansar',
+  unlockLevel: 1,
+  type: 'buff',
+  tags: [],
+  target: 'self',
+  staminaCostPercent: 0,
+  cooldown: 0,
+  hits: 0,
+  accuracy: 100,
+  critChance: 0,
+  damage: null,
+  damageEstimated: false,
+  properties: [],
+  effects: [],
+  description: `Pasa el turno y recupera ${REST_STAMINA_FRACTION * 100}% de stamina extra.`,
+};
 
 export interface CombatData {
   classes: ClassesFile;
   abilityById: ReadonlyMap<string, Ability>;
+  statusById: ReadonlyMap<string, StatusDefinition>;
 }
 
 export class InvalidActionError extends Error {}
+
+export function hasProperty(ability: Ability, property: AbilityProperty): boolean {
+  return ability.properties.includes(property);
+}
 
 export function createCombatant(hero: Hero, team: TeamId, slot: number, data: CombatData): Combatant {
   const abilities = hero.abilityIds.map((id) => {
@@ -41,7 +65,7 @@ export function createCombatant(hero: Hero, team: TeamId, slot: number, data: Co
     slot,
     classId: hero.classId,
     stats: { ...hero.baseStats },
-    abilities,
+    abilities: [...abilities, REST_ABILITY],
     hp: hero.baseStats.health,
     stamina: hero.baseStats.stamina,
     statuses: [],
@@ -76,6 +100,7 @@ export function createBattle(
     log: [],
     rngState: seed | 0,
     classes: data.classes,
+    statusById: data.statusById,
   };
   advance(state);
   return state;
@@ -97,8 +122,13 @@ export function currentActor(state: BattleState): Combatant | null {
   return getCombatant(state, state.turnOrder[state.turnIndex]);
 }
 
+/** Stamina que cuesta la habilidad a este combatiente (porcentaje de su máximo). */
+export function staminaCost(c: Combatant, ability: Ability): number {
+  return Math.round((c.stats.stamina * ability.staminaCostPercent) / 100);
+}
+
 export function canUseAbility(c: Combatant, ability: Ability): boolean {
-  return c.stamina >= ability.staminaCost && (c.cooldowns[ability.id] ?? 0) === 0;
+  return c.stamina >= staminaCost(c, ability) && (c.cooldowns[ability.id] ?? 0) === 0;
 }
 
 /** Objetivos elegibles para una habilidad de objetivo único (vacío si no hay que elegir). */
@@ -116,15 +146,44 @@ export function matchupBetween(state: BattleState, attacker: Combatant, defender
   return getMatchup(state.classes.classes, attacker.classId, defender.classId);
 }
 
-/** Probabilidad de acertar (0 a 100) de un golpe. */
-export function hitChance(attacker: Combatant, defender: Combatant): number {
-  const chance = attacker.stats.accuracy + accuracyBonus(attacker) + BASE_HIT_BONUS - defender.stats.evasion;
+/**
+ * Probabilidad de acertar (0 a 100) de un golpe: precisión de la habilidad más
+ * los efectos del atacante, menos la evasión del defensor.
+ */
+export function hitChance(state: BattleState, attacker: Combatant, defender: Combatant, ability: Ability): number {
+  if (hasProperty(ability, 'catastrophic') || hasFlag(state, defender, 'attacksCannotMiss')) return 100;
+  const evasion = hasFlag(state, defender, 'ignoreEvasion')
+    ? 0
+    : defender.stats.evasion + sumModifier(state, defender, 'evasion');
+  const chance = ability.accuracy + sumModifier(state, attacker, 'accuracy') - evasion;
   return Math.min(100, Math.max(MIN_HIT_CHANCE, chance));
 }
 
+/** Probabilidad de crítico (0 a 100) de cada golpe. */
+export function critChance(state: BattleState, attacker: Combatant, ability: Ability): number {
+  return Math.min(100, Math.max(0, ability.critChance + sumModifier(state, attacker, 'critChance')));
+}
+
+/** Multiplicador por propiedades que aprovechan efectos del objetivo o del atacante. */
+function exploitMultiplier(attacker: Combatant, defender: Combatant, ability: Ability): number {
+  let mult = 1;
+  if (hasProperty(ability, 'exploits_combos') && hasStatus(defender, 'combo_setup')) mult *= 1 + EXPLOIT_COMBO_BONUS;
+  if (hasProperty(ability, 'exploits_bleeds')) mult *= 1 + EXPLOIT_BLEED_BONUS_PER_STACK * stacksOf(defender, 'bleed');
+  if (hasProperty(ability, 'anger_unleashed')) mult *= 1 + ANGER_BONUS_PER_STACK * stacksOf(attacker, 'hulk_up');
+  return mult;
+}
+
+export interface DamageBreakdown {
+  /** Daño final que recibe el defensor. */
+  amount: number;
+  /** Daño antes de las reducciones del defensor (base para contraataques). */
+  beforeTaken: number;
+}
+
 /**
- * Daño de un golpe sin aplicarlo. `baseDamage` sale del rango min-max de la
- * habilidad; el ataque escala sobre 100 y la defensa mitiga con 200 / (200 + def).
+ * Daño de un golpe sin aplicarlo. `baseDamage` es la tirada de ese golpe; el
+ * ataque escala sobre 100, la defensa mitiga con 200 / (200 + def) y luego se
+ * aplican clase, crítico, efectos y propiedades de la habilidad.
  */
 export function computeDamage(
   state: BattleState,
@@ -132,18 +191,46 @@ export function computeDamage(
   defender: Combatant,
   baseDamage: number,
   crit: boolean,
+  ability?: Ability,
 ): number {
-  const attack = (attacker.stats.attack * attackModifier(attacker)) / 100;
-  const defense = defender.stats.defense * defenseModifier(defender);
+  return damageBreakdown(state, attacker, defender, baseDamage, crit, ability).amount;
+}
+
+export function damageBreakdown(
+  state: BattleState,
+  attacker: Combatant,
+  defender: Combatant,
+  baseDamage: number,
+  crit: boolean,
+  ability?: Ability,
+): DamageBreakdown {
+  const dealt = Math.max(0.1, 1 + sumModifier(state, attacker, 'damageDealtPercent') / 100);
+  const attack = (attacker.stats.attack / 100) * dealt;
+  let defense = defender.stats.defense * Math.max(0, 1 + sumModifier(state, defender, 'defensePercent') / 100);
+  if (ability && hasProperty(ability, 'adamantium')) defense *= 1 - ADAMANTIUM_DEFENSE_IGNORED;
   const mitigation = 200 / (200 + defense);
   const classMod = getDamageMultiplier(state.classes.rules, matchupBetween(state, attacker, defender));
-  const dmg = baseDamage * attack * mitigation * classMod * (crit ? CRIT_MULTIPLIER : 1);
-  return Math.max(1, Math.round(dmg));
+  const critMod = crit ? (ability && hasProperty(ability, 'deadly_crits') ? DEADLY_CRIT_MULTIPLIER : CRIT_MULTIPLIER) : 1;
+  const exploit = ability ? exploitMultiplier(attacker, defender, ability) : 1;
+  const beforeTaken = baseDamage * attack * mitigation * classMod * critMod * exploit;
+
+  let taken = sumModifier(state, defender, 'damageTakenPercent');
+  // Un ataque poderoso atraviesa escudos: solo cuentan los efectos que suben el daño recibido.
+  if (ability && hasProperty(ability, 'mighty_attack')) {
+    taken = 0;
+    for (const s of defender.statuses) {
+      const v = state.statusById.get(s.id)?.modifiers.damageTakenPercent ?? 0;
+      if (v > 0) taken += v * s.stacks;
+    }
+  }
+  const amount = beforeTaken * Math.max(0, 1 + taken / 100);
+  return { amount: Math.max(1, Math.round(amount)), beforeTaken };
 }
 
 /**
- * Ejecuta la acción de quien tiene el turno, cierra su turno y avanza hasta el
- * siguiente que pueda actuar. Devuelve los eventos generados, en orden.
+ * Ejecuta la acción de quien tiene el turno. Una acción rápida no gasta el
+ * turno; cualquier otra lo cierra y avanza hasta el siguiente que pueda actuar.
+ * Devuelve los eventos generados, en orden.
  */
 export function performAction(state: BattleState, action: Action): BattleEvent[] {
   const logStart = state.log.length;
@@ -157,38 +244,86 @@ export function performAction(state: BattleState, action: Action): BattleEvent[]
   if (!canUseAbility(actor, ability)) throw new InvalidActionError(`${ability.name} no está disponible`);
 
   const targets = resolveTargets(state, actor, ability, action.targetUid);
-  actor.stamina -= ability.staminaCost;
+  const quick = hasProperty(ability, 'quick_action');
+  actor.stamina -= staminaCost(actor, ability);
   // +1 porque el contador baja al empezar el siguiente turno propio.
   if (ability.cooldown > 0) actor.cooldowns[ability.id] = ability.cooldown + 1;
-  emit(state, { type: 'ability-used', actorUid: actor.uid, abilityId: ability.id, targets: targets.map((t) => t.uid) });
+  emit(state, { type: 'ability-used', actorUid: actor.uid, abilityId: ability.id, targets: targets.map((t) => t.uid), quick });
+
+  if (ability.id === REST_ABILITY.id) {
+    const before = actor.stamina;
+    actor.stamina = Math.min(actor.stats.stamina, actor.stamina + Math.round(actor.stats.stamina * REST_STAMINA_FRACTION));
+    emit(state, { type: 'stamina', targetUid: actor.uid, amount: actor.stamina - before, cause: 'rest' });
+  }
 
   for (const target of targets) {
     let landed = !ability.damage;
     if (ability.damage) {
-      for (let i = 0; i < ability.hits && isAlive(target); i++) {
-        if (strike(state, actor, target, ability.damage)) landed = true;
+      for (let i = 0; i < ability.hits && isAlive(target) && isAlive(actor); i++) {
+        if (strike(state, actor, target, ability)) landed = true;
+      }
+      if (landed && hasProperty(ability, 'exploits_combos') && removeStatus(target, 'combo_setup')) {
+        emit(state, { type: 'status-removed', targetUid: target.uid, statusId: 'combo_setup', cause: 'exploits_combos' });
       }
     }
-    // Los efectos sobre un enemigo solo entran si al menos un golpe acertó.
+    // Los efectos sobre un objetivo solo entran si al menos un golpe acertó.
     if (!landed || !isAlive(target)) continue;
     for (const effect of ability.effects) {
-      if (effect.chance < 1 && nextRandom(state) >= effect.chance) {
-        emit(state, { type: 'status-resisted', targetUid: target.uid, statusId: effect.id });
-        continue;
+      if (effect.target === 'target') applyEffect(state, actor, target, effect);
+    }
+  }
+
+  if (isAlive(actor)) {
+    if (hasProperty(ability, 'anger_unleashed') && removeStatus(actor, 'hulk_up')) {
+      emit(state, { type: 'status-removed', targetUid: actor.uid, statusId: 'hulk_up', cause: 'anger_unleashed' });
+    }
+    for (const effect of ability.effects) {
+      if (effect.target === 'self') applyEffect(state, actor, actor, effect);
+      if (effect.target === 'all_allies') {
+        for (const ally of state.combatants.filter((c) => c.team === actor.team && isAlive(c))) {
+          applyEffect(state, actor, ally, effect);
+        }
       }
-      addStatus(target, effect.id, effect.duration);
-      if (target === actor) actor.statuses.find((s) => s.id === effect.id)!.fresh = true;
-      emit(state, { type: 'status-applied', targetUid: target.uid, statusId: effect.id, duration: effect.duration });
     }
   }
 
   checkWinner(state);
-  if (!state.winner) {
+  if (!state.winner && !(quick && isAlive(actor))) {
     endTurn(state, actor);
     state.turnIndex++;
     advance(state);
   }
   return state.log.slice(logStart);
+}
+
+function applyEffect(state: BattleState, actor: Combatant, target: Combatant, effect: Ability['effects'][number]) {
+  if (effect.chance < 1 && nextRandom(state) >= effect.chance) {
+    emit(state, { type: 'status-resisted', targetUid: target.uid, statusId: effect.id });
+    return;
+  }
+  if (state.statusById.get(effect.id)?.kind === 'instant') {
+    applyInstant(state, target, effect.id);
+    return;
+  }
+  const status = addStatus(state, target, effect.id, effect.duration, effect.stacks);
+  if (target === actor) status.fresh = true;
+  emit(state, {
+    type: 'status-applied',
+    targetUid: target.uid,
+    statusId: effect.id,
+    duration: effect.duration,
+    stacks: status.stacks,
+  });
+}
+
+/** Efectos de un solo uso, que no se quedan en el objetivo. */
+function applyInstant(state: BattleState, target: Combatant, id: string) {
+  if (id === 'remove_buffs') {
+    for (const s of target.statuses.filter((x) => isBuff(state, x.id))) {
+      removeStatus(target, s.id);
+      emit(state, { type: 'status-removed', targetUid: target.uid, statusId: s.id, cause: id });
+    }
+  }
 }
 
 function resolveTargets(
@@ -216,27 +351,38 @@ function resolveTargets(
   }
 }
 
-/** Un golpe: tirada de acierto, de daño y de crítico. Devuelve si acertó. */
-function strike(
-  state: BattleState,
-  attacker: Combatant,
-  defender: Combatant,
-  range: { min: number; max: number },
-): boolean {
-  if (nextRandom(state) * 100 >= hitChance(attacker, defender)) {
+/** Un golpe: tirada de acierto, de daño y de crítico, y contraataque si toca. Devuelve si acertó. */
+function strike(state: BattleState, attacker: Combatant, defender: Combatant, ability: Ability): boolean {
+  if (nextRandom(state) * 100 >= hitChance(state, attacker, defender, ability)) {
     emit(state, { type: 'miss', sourceUid: attacker.uid, targetUid: defender.uid });
     return false;
   }
-  const base = range.min + Math.floor(nextRandom(state) * (range.max - range.min + 1));
-  const crit = nextRandom(state) < CRIT_CHANCE;
-  const amount = computeDamage(state, attacker, defender, base, crit);
+  const range = ability.damage!;
+  const hits = Math.max(1, ability.hits);
+  const min = range.min / hits;
+  const max = range.max / hits;
+  const base = min + nextRandom(state) * (max - min);
+  const crit = nextRandom(state) * 100 < critChance(state, attacker, ability);
+  const { amount, beforeTaken } = damageBreakdown(state, attacker, defender, base, crit, ability);
   applyDamage(state, defender, amount, {
     sourceUid: attacker.uid,
     crit,
     matchup: matchupBetween(state, attacker, defender),
     cause: 'ability',
   });
+  counter(state, attacker, defender, ability, beforeTaken);
   return true;
+}
+
+/** Devuelve parte del golpe a un atacante cuerpo a cuerpo si el defensor tiene un efecto de contraataque. */
+function counter(state: BattleState, attacker: Combatant, defender: Combatant, ability: Ability, beforeTaken: number) {
+  if (ability.type !== 'melee' || !isAlive(defender) || !isAlive(attacker)) return;
+  if (hasProperty(ability, 'subtle') || hasProperty(ability, 'stealthy')) return;
+  if (hasFlag(state, defender, 'noCounter')) return;
+  const percent = sumModifier(state, defender, 'counterPercent');
+  if (percent <= 0) return;
+  const amount = Math.max(1, Math.round((beforeTaken * percent) / 100));
+  applyDamage(state, attacker, amount, { sourceUid: defender.uid, crit: false, matchup: 'neutral', cause: 'counter' });
 }
 
 function applyDamage(
@@ -298,8 +444,9 @@ function advance(state: BattleState) {
       state.turnIndex++;
       continue;
     }
-    if (hasStatus(actor, 'stun')) {
-      emit(state, { type: 'turn-skipped', actorUid: actor.uid, reason: 'stun' });
+    const skip = actor.statuses.find((s) => state.statusById.get(s.id)?.modifiers.skipTurn);
+    if (skip) {
+      emit(state, { type: 'turn-skipped', actorUid: actor.uid, reason: skip.id });
       endTurn(state, actor);
       state.turnIndex++;
       continue;
@@ -315,12 +462,14 @@ function startTurn(state: BattleState, actor: Combatant) {
     actor.cooldowns[id] = Math.max(0, actor.cooldowns[id] - 1);
   }
   for (const status of [...actor.statuses]) {
-    const fraction = TICK_FRACTION[status.id as StatusId];
-    if (!fraction || !isAlive(actor)) continue;
-    const amount = Math.max(1, Math.round(actor.stats.health * fraction));
-    if (status.id === 'regeneration') {
-      heal(state, actor, amount, status.id);
-    } else {
+    if (!isAlive(actor)) break;
+    const mods = state.statusById.get(status.id)?.modifiers;
+    if (!mods) continue;
+    if (mods.healOverTimePercent) {
+      heal(state, actor, Math.max(1, Math.round((actor.stats.health * mods.healOverTimePercent * status.stacks) / 100)), status.id);
+    }
+    if (mods.damageOverTimePercent) {
+      const amount = Math.max(1, Math.round((actor.stats.health * mods.damageOverTimePercent * status.stacks) / 100));
       applyDamage(state, actor, amount, { sourceUid: null, crit: false, matchup: 'neutral', cause: status.id });
     }
   }

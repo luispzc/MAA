@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { abilityById, classesData, heroById } from '../data';
+import { abilityById, classesData, heroById, statusById } from '../data';
 import {
   canUseAbility,
   chooseAiAction,
@@ -8,8 +8,11 @@ import {
   describeEvent,
   getCombatant,
   isAlive,
+  isDebuff,
   performAction,
+  propertyName,
   selectableTargets,
+  staminaCost,
   statusName,
   type Action,
   type BattleEvent,
@@ -17,7 +20,7 @@ import {
   type Combatant,
 } from '../core/combat';
 import type { Ability } from '../types/game';
-import { CLASS_COLORS, createAbilityIcon, createFigure, createPortrait, drawStage } from './battle/art';
+import { CLASS_COLORS, createAbilityIcon, createFigure, createPortrait, drawStage, figureHeight, figureWidth } from './battle/art';
 
 /** Equipos del prototipo. Más adelante saldrán de la pantalla de selección. */
 const PLAYER_TEAM = ['iron_man', 'captain_america', 'thor'];
@@ -51,6 +54,8 @@ interface UnitView {
   hit: Phaser.GameObjects.Rectangle;
   x: number;
   y: number;
+  /** Alto de la figura en pantalla, para poner la placa y los números encima. */
+  height: number;
 }
 
 interface RowView {
@@ -90,7 +95,7 @@ export class BattleScene extends Phaser.Scene {
       if (!h) throw new Error(`No existe el héroe ${id}`);
       return h;
     };
-    this.state = createBattle(PLAYER_TEAM.map(hero), ENEMY_TEAM.map(hero), { classes: classesData, abilityById });
+    this.state = createBattle(PLAYER_TEAM.map(hero), ENEMY_TEAM.map(hero), { classes: classesData, abilityById, statusById });
     this.units.clear();
     this.rows.clear();
     this.logLines = [];
@@ -165,9 +170,11 @@ export class BattleScene extends Phaser.Scene {
   private createUnit(c: Combatant): void {
     const { x, y } = this.spot(c);
     const root = this.add.container(x, y);
-    const ring = this.add.ellipse(0, 0, 96, 26).setStrokeStyle(3, 0xffffff).setFillStyle(0xffffff, 0.08).setVisible(false);
+    const height = figureHeight(this, c.heroId, c.classId);
+    const width = Math.max(80, Math.min(140, figureWidth(this, c.heroId) * 0.8));
+    const ring = this.add.ellipse(0, 0, Math.max(96, width), 26).setStrokeStyle(3, 0xffffff).setFillStyle(0xffffff, 0.08).setVisible(false);
     const body = createFigure(this, c.heroId, c.name, c.classId, c.team === 'enemy');
-    const hit = this.add.rectangle(0, -85, 90, 170, 0xffffff, 0);
+    const hit = this.add.rectangle(0, -height / 2, width, height, 0xffffff, 0);
     root.add([ring, body, hit]);
     hit.on('pointerdown', () => this.onTargetClicked(c.uid));
     hit.on('pointerover', () => this.setHovered(c.uid));
@@ -180,7 +187,7 @@ export class BattleScene extends Phaser.Scene {
       repeat: -1,
       ease: 'Sine.easeInOut',
     });
-    this.units.set(c.uid, { root, body, ring, hit, x, y });
+    this.units.set(c.uid, { root, body, ring, hit, x, y, height });
   }
 
   private createTeamPanel(team: 'player' | 'enemy', x: number, w: number): void {
@@ -272,7 +279,9 @@ export class BattleScene extends Phaser.Scene {
       }
       row.bg.setFillStyle(isActor ? 0x1d4f8f : hot ? 0x5a1a1a : isTarget ? 0x3a1616 : 0x141b30);
       row.name.setColor(isAlive(c) ? '#ffffff' : '#5c6580');
-      row.statuses.setText(c.statuses.map((s) => `${statusName(s.id)} ${s.turnsLeft}`).join('  '));
+      row.statuses.setText(
+        c.statuses.map((s) => `${statusName(this.state, s.id)}${s.stacks > 1 ? ` x${s.stacks}` : ''} ${s.turnsLeft}`).join('  '),
+      );
     }
 
     const plateFor = this.hovered && targets.has(this.hovered) ? getCombatant(this.state, this.hovered) : actor;
@@ -286,7 +295,7 @@ export class BattleScene extends Phaser.Scene {
     this.plate.removeAll(true);
     if (!c) return;
     const unit = this.units.get(c.uid)!;
-    const top = unit.y - (c.classId === 'bruiser' ? 190 : 172);
+    const top = Math.max(84, unit.y - unit.height - 40);
     this.plate.setPosition(unit.x - PLATE_W / 2 + 12, top);
     const color = CLASS_COLORS[c.classId];
     this.plate.add([
@@ -307,11 +316,11 @@ export class BattleScene extends Phaser.Scene {
       this.add.rectangle(12, 24, (PLATE_W - 12) * (c.stamina / c.stats.stamina), 5, 0xf2a93b).setOrigin(0),
     ]);
     c.statuses.forEach((s, i) => {
-      const bad = ['stun', 'bleed', 'attack_down', 'defense_down', 'accuracy_down'].includes(s.id);
+      const bad = isDebuff(this.state, s.id);
       this.plate.add([
         this.add.rectangle(12 + i * 20, 33, 18, 16, bad ? 0x8f1d1d : 0x1d7a3a).setOrigin(0).setStrokeStyle(1, 0xffffff, 0.8),
         this.add
-          .text(21 + i * 20, 41, statusName(s.id).slice(0, 1).toUpperCase(), {
+          .text(21 + i * 20, 41, statusName(this.state, s.id).slice(0, 1).toUpperCase(), {
             fontFamily: FONT,
             fontSize: '11px',
             color: '#ffffff',
@@ -401,10 +410,10 @@ export class BattleScene extends Phaser.Scene {
             .text(x, 0, `${cd}`, { fontFamily: FONT, fontSize: '22px', color: '#ffffff', fontStyle: 'bold', stroke: '#000', strokeThickness: 4 })
             .setOrigin(0.5),
         );
-      } else if (ability.staminaCost > 0) {
+      } else if (ability.staminaCostPercent > 0) {
         this.abilityBar.add(
           this.add
-            .text(x + ICON / 2 - 2, ICON / 2 - 2, `${ability.staminaCost}`, {
+            .text(x + ICON / 2 - 2, ICON / 2 - 2, `${staminaCost(actor, ability)}`, {
               fontFamily: FONT,
               fontSize: '10px',
               color: '#ffffff',
@@ -424,23 +433,46 @@ export class BattleScene extends Phaser.Scene {
   private showTooltip(ability: Ability, actor: Combatant, x: number): void {
     this.tooltip.removeAll(true);
     const cd = actor.cooldowns[ability.id] ?? 0;
-    const detail = [
-      ability.damage ? `Daño ${ability.damage.min}-${ability.damage.max}${ability.hits > 1 ? ` x${ability.hits}` : ''}` : null,
-      ability.staminaCost ? `${ability.staminaCost} stamina` : 'Sin coste',
+    const cost = staminaCost(actor, ability);
+    const stats = [
+      cost ? `${cost} stamina (${ability.staminaCostPercent}%)` : 'Sin coste',
+      ability.damage
+        ? `Daño ${ability.damage.min}-${ability.damage.max}${ability.damageEstimated ? '*' : ''}${ability.hits > 1 ? ` en ${ability.hits} golpes` : ''}`
+        : null,
+      ability.damage ? `Acierto ${ability.accuracy}% · Crítico ${ability.critChance}%` : null,
+      ability.cooldown ? `Cooldown ${ability.cooldown} ronda${ability.cooldown > 1 ? 's' : ''}` : null,
       cd > 0 ? `Lista en ${cd} turno${cd > 1 ? 's' : ''}` : null,
-    ]
-      .filter(Boolean)
-      .join(' · ');
-    const w = 250;
-    const text = this.add.text(10, 8, [ability.name, detail, ability.description], {
+    ].filter(Boolean);
+    const who = { target: 'Objetivo', self: 'Propio', all_allies: 'Equipo' } as const;
+    const effects = ability.effects.map((e) => {
+      const chance = e.chance < 1 ? ` (${Math.round(e.chance * 100)}%)` : '';
+      const stacks = e.stacks > 1 ? ` x${e.stacks}` : '';
+      const turns = e.duration > 0 ? `, ${e.duration} t` : '';
+      return `${who[e.target]}: ${statusName(this.state, e.id)}${stacks}${turns}${chance}`;
+    });
+    const lines = [
+      stats.join(' · '),
+      ability.properties.length ? ability.properties.map(propertyName).join(' · ') : null,
+      ...effects,
+      ability.description,
+      ability.damageEstimated ? '* Daño estimado: la ficha original no lo trae.' : null,
+    ].filter((l): l is string => !!l);
+    const w = 290;
+    const title = this.add.text(10, 8, ability.name, {
+      fontFamily: FONT,
+      fontSize: '14px',
+      color: '#ffffff',
+      fontStyle: 'bold',
+    });
+    const text = this.add.text(10, 28, lines, {
       fontFamily: FONT,
       fontSize: '12px',
       color: '#dfe6f7',
       wordWrap: { width: w - 20 },
       lineSpacing: 3,
     });
-    const h = text.height + 16;
-    this.tooltip.add([this.add.rectangle(0, 0, w, h, 0x0b1020, 0.95).setOrigin(0).setStrokeStyle(1, 0x8fa3d6), text]);
+    const h = text.height + 38;
+    this.tooltip.add([this.add.rectangle(0, 0, w, h, 0x0b1020, 0.95).setOrigin(0).setStrokeStyle(1, 0x8fa3d6), title, text]);
     this.tooltip.setPosition(Phaser.Math.Clamp(x - w / 2, 6, this.scale.width - w - 6), BAR_Y - ICON / 2 - 44 - h);
     this.tooltip.setVisible(true);
   }
@@ -550,8 +582,12 @@ export class BattleScene extends Phaser.Scene {
         color = '#c9d1e6';
       } else if (e.type === 'status-applied') {
         uid = e.targetUid;
-        text = statusName(e.statusId);
-        color = '#f2c14e';
+        text = statusName(this.state, e.statusId) + (e.stacks > 1 ? ` x${e.stacks}` : '');
+        color = isDebuff(this.state, e.statusId) ? '#ff9a5a' : '#6bd0ff';
+      } else if (e.type === 'stamina' && e.amount > 0) {
+        uid = e.targetUid;
+        text = `+${e.amount} stamina`;
+        color = '#6bb8ff';
       }
       if (!text) continue;
       const unit = this.units.get(uid)!;
@@ -561,7 +597,7 @@ export class BattleScene extends Phaser.Scene {
         this.tweens.add({ targets: unit.body, x: { from: -6, to: 0 }, duration: 60, repeat: 2, delay: 120 + n * 140 });
       }
       const label = this.add
-        .text(unit.x, unit.y - 150, text, {
+        .text(unit.x, unit.y - unit.height + 20, text, {
           fontFamily: FONT,
           fontSize: e.type === 'damage' ? '26px' : '18px',
           color,
