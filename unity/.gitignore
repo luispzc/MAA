@@ -24,3 +24,7 @@
 Tools/CoreCheck/bin/
 Tools/CoreCheck/obj/
 !Tools/CoreCheck/CoreCheck.csproj
+
+# Copia generada de /data y /public/assets (menú MAA o al compilar)
+Assets/StreamingAssets/MAA/
+Assets/StreamingAssets/MAA.meta

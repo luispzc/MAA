@@ -1,93 +1,148 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using MAA.Core.Combat;
 using MAA.Core.Data;
 
-// Uso: dotnet run --project unity/Tools/CoreCheck [carpeta de datos]
-// Sin argumento lee unity/Assets/StreamingAssets/data.
+// Compila MAA.Core fuera de Unity (C# 9) y comprueba reglas y datos.
+// Uso:
+//   dotnet run --project unity/Tools/CoreCheck                     usa /data del repo
+//   dotnet run --project unity/Tools/CoreCheck -- --data <carpeta>
+//   dotnet run --project unity/Tools/CoreCheck -- --trace <archivo> escribe la traza de
+//     las semillas 1..200 para compararla con la versión web (tools/combat-trace.mjs).
 internal static class Program
 {
+    private static readonly string[] PlayerTeam = { "iron_man", "captain_america", "thor" };
+    private static readonly string[] EnemyTeam = { "hulk", "wolverine", "black_widow" };
+    private const int TraceSeeds = 200;
     private static int _failures;
 
     private static int Main(string[] args)
     {
-        var baseDir = AppContext.BaseDirectory;
-        var dataDir = args.Length > 0
-            ? args[0]
-            : Path.GetFullPath(Path.Combine(baseDir, "../../../../../Assets/StreamingAssets/data"));
-        var json = new JsonSerializerOptions { IncludeFields = true, PropertyNameCaseInsensitive = false };
-        T Load<T>(string file) => JsonSerializer.Deserialize<T>(File.ReadAllText(Path.Combine(dataDir, file)), json);
-        var data = new GameData(Load<HeroCatalog>("heroes.json"), Load<ClassCatalog>("classes.json"), Load<AbilityCatalog>("abilities.json"));
-        var heroes = data.Heroes.heroes;
-        var classes = data.Classes;
-        Console.WriteLine($"Datos: {heroes.Count} héroes, {classes.classes.Count} clases, {data.Abilities.abilities.Count} habilidades ({dataDir})");
+        string dataDir = Arg(args, "--data") ?? FindRepoData();
+        string tracePath = Arg(args, "--trace");
+        var data = Load(dataDir);
+        Console.WriteLine($"Datos: {data.Heroes.heroes.Count} héroes, {data.Abilities.abilities.Count} habilidades, {data.Statuses.statuses.Count} efectos ({dataDir})");
 
-        var adv = new ClassAdvantage(classes);
-        Check(adv.Resolve("bruiser", "scrapper") == Matchup.Advantage, "bruiser gana a scrapper");
-        Check(adv.Resolve("scrapper", "bruiser") == Matchup.Disadvantage, "scrapper pierde contra bruiser");
-        Check(adv.Resolve("blaster", "bruiser") == Matchup.Advantage, "blaster gana a bruiser (cierra el ciclo)");
-        Check(adv.Resolve("generalist", "blaster") == Matchup.Neutral, "generalist es neutral");
-        foreach (var h in heroes)
+        CheckData(data);
+        CheckRules(data);
+
+        int playerWins = 0, rounds = 0;
+        var trace = new StringBuilder();
+        for (int seed = 1; seed <= TraceSeeds; seed++)
         {
-            Check(classes.classes.Any(c => c.id == h.classId), $"{h.id}: clase '{h.classId}' existe");
-            Check(!data.MissingAbilityIds(h).Any(), $"{h.id}: todas sus habilidades existen ({string.Join(", ", data.MissingAbilityIds(h))})");
-            Check(data.AbilitiesOf(h).Any(a => a.DealsDamage && a.staminaCost == 0 && a.cooldown == 0), $"{h.id}: tiene un ataque sin coste ni cooldown");
-        }
-
-        // Mismo seed, mismo resultado.
-        Check(Simulate(data, 42).Log.Count == Simulate(data, 42).Log.Count, "combate reproducible con semilla");
-
-        // Cooldown: una habilidad con cooldown 2 queda bloqueada los 2 turnos propios siguientes.
-        var cdAbility = data.Abilities.abilities.FirstOrDefault(a => a.cooldown == 2 && a.DealsDamage && a.target == "single_enemy");
-        if (cdAbility != null)
-        {
-            var owner = data.Hero(cdAbility.heroId);
-            var rival = heroes.First(h => h.id != owner.id);
-            var b = new Battle(data, new[] { owner }, new[] { rival }, new DamageCalculator(new ClassAdvantage(classes), new SystemRandom(1)));
-            var me = b.Heroes[0];
-            Check(me.CanUse(cdAbility), "cooldown: disponible al inicio");
-            b.Act(cdAbility, b.Enemies[0]);
-            int blocked = 0;
-            for (int turn = 0; turn < 5 && b.Outcome == BattleOutcome.InProgress; turn++)
-            {
-                if (b.CurrentActor != me) { b.Pass(); continue; }
-                if (me.CanUse(cdAbility)) break;
-                blocked++;
-                b.Pass();
-            }
-            Check(blocked == 2, $"cooldown 2 bloquea 2 turnos (bloqueó {blocked})");
-        }
-
-        int heroWins = 0, rounds = 0;
-        const int n = 500;
-        for (int s = 1; s <= n; s++)
-        {
-            var b = Simulate(data, s);
-            Check(b.Outcome != BattleOutcome.InProgress, $"semilla {s}: el combate termina");
-            if (b.Outcome == BattleOutcome.HeroesWin) heroWins++;
+            var b = AutoBattle(data, seed, trace);
+            Check(b.Winner.HasValue, $"semilla {seed}: el combate termina");
+            if (b.Winner == Team.Player) playerWins++;
             rounds += b.Round;
         }
-        Console.WriteLine($"{n} combates auto (3 primeros vs 3 últimos): héroes ganan {heroWins * 100 / n}%, {rounds / (double)n:F1} rondas de media");
+        Console.WriteLine($"{TraceSeeds} combates IA contra IA ({string.Join(", ", PlayerTeam)} vs {string.Join(", ", EnemyTeam)}): " +
+                          $"gana el equipo del jugador {playerWins * 100 / TraceSeeds}%, {rounds / (double)TraceSeeds:F1} rondas de media");
+        if (tracePath != null)
+        {
+            File.WriteAllText(tracePath, trace.ToString());
+            Console.WriteLine($"Traza escrita en {tracePath}");
+        }
 
-        var sample = Simulate(data, 7);
-        Console.WriteLine("\nEjemplo (semilla 7):");
-        foreach (var e in sample.Log.Take(12)) Console.WriteLine($"  R{e.Round}: {e.Message}");
-        Console.WriteLine($"  ... {sample.Outcome} en {sample.Round} rondas");
-
-        Console.WriteLine(_failures == 0 ? "\nOK: todas las comprobaciones pasaron" : $"\nFALLOS: {_failures}");
+        Console.WriteLine(_failures == 0 ? "OK: todas las comprobaciones pasaron" : $"FALLOS: {_failures}");
         return _failures == 0 ? 0 : 1;
     }
 
-    private static Battle Simulate(GameData data, int seed)
+    private static void CheckData(GameData data)
     {
-        var heroes = data.Heroes.heroes;
-        var battle = new Battle(data, heroes.Take(3), heroes.Skip(heroes.Count - 3),
-            new DamageCalculator(new ClassAdvantage(data.Classes), new SystemRandom(seed)));
-        for (int guard = 0; battle.Outcome == BattleOutcome.InProgress && guard < 10_000; guard++)
-            battle.ActAuto();
-        return battle;
+        foreach (var h in data.Heroes.heroes)
+        {
+            Check(data.Classes.classes.Any(c => c.id == h.classId), $"{h.id}: la clase '{h.classId}' existe");
+            Check(!data.MissingAbilityIds(h).Any(), $"{h.id}: existen sus habilidades ({string.Join(", ", data.MissingAbilityIds(h))})");
+        }
+        foreach (var a in data.Abilities.abilities)
+            foreach (var e in a.effects)
+                Check(data.Status(e.id) != null, $"{a.id}: el efecto '{e.id}' existe en statuses.json");
+    }
+
+    private static void CheckRules(GameData data)
+    {
+        var b = new Battle(data, Heroes(data, PlayerTeam), Heroes(data, EnemyTeam), 1);
+        var ironMan = b.Get("player-0");
+        var hulk = b.Get("enemy-0");
+        Check(b.CurrentActor == ironMan, "empieza el primer héroe del jugador");
+        Check(b.MatchupBetween(ironMan, hulk) == Matchup.Advantage, "blaster tiene ventaja sobre bruiser");
+        Check(b.MatchupBetween(hulk, ironMan) == Matchup.Disadvantage, "bruiser tiene desventaja contra blaster");
+        Check(ironMan.Abilities.Last().id == "rest", "Descansar siempre está al final");
+        Check(Battle.JsRound(2.5) == 3 && Battle.JsRound(-2.5) == -2, "redondeo igual que Math.round");
+
+        // Contra una defensa de 3 estrellas, sin efectos ni clase, el daño es el de la ficha.
+        var cap = b.Get("player-1");
+        var wolverine = b.Get("enemy-1");
+        var plain = new AbilityData { id = "x", properties = new List<string>() };
+        Check(b.DamageBreakdown(cap, wolverine, 1000, false, plain).Amount == 1000, "defensa de referencia no cambia el daño");
+
+        // Mulberry32: primeros valores con semilla 1, calculados con la versión web.
+        var rng = new Rng(1);
+        Check(Math.Abs(rng.Next() - 0.6270739405881613) < 1e-15, "mulberry32 igual que la web");
+    }
+
+    private static Battle AutoBattle(GameData data, int seed, StringBuilder trace)
+    {
+        var b = new Battle(data, Heroes(data, PlayerTeam), Heroes(data, EnemyTeam), seed);
+        trace.Append("# seed ").Append(seed).Append('\n');
+        int written = 0;
+        for (int guard = 0; !b.Winner.HasValue && guard < 2000; guard++)
+            b.Perform(BattleAi.Choose(b));
+        foreach (var e in b.Log.Skip(written)) trace.Append(Format(e)).Append('\n');
+        return b;
+    }
+
+    /// <summary>Línea canónica de un evento; tools/combat-trace.mjs escribe exactamente lo mismo.</summary>
+    private static string Format(BattleEvent e)
+    {
+        switch (e.Type)
+        {
+            case EventType.RoundStart: return $"round-start {e.Round} {string.Join(",", e.Order)}";
+            case EventType.TurnStart: return $"turn-start {e.ActorUid}";
+            case EventType.TurnSkipped: return $"turn-skipped {e.ActorUid} {e.StatusId}";
+            case EventType.AbilityUsed: return $"ability-used {e.ActorUid} {e.AbilityId} {string.Join(",", e.Targets)} {(e.Quick ? 1 : 0)}";
+            case EventType.Miss: return $"miss {e.SourceUid} {e.TargetUid}";
+            case EventType.Damage: return $"damage {e.SourceUid ?? "-"} {e.TargetUid} {e.Amount} {(e.Crit ? 1 : 0)} {e.Matchup.ToString().ToLowerInvariant()} {e.Cause}";
+            case EventType.Heal: return $"heal {e.TargetUid} {e.Amount} {e.Cause}";
+            case EventType.Stamina: return $"stamina {e.TargetUid} {e.Amount} {e.Cause}";
+            case EventType.StatusApplied: return $"status-applied {e.TargetUid} {e.StatusId} {e.Duration} {e.Stacks}";
+            case EventType.StatusResisted: return $"status-resisted {e.TargetUid} {e.StatusId}";
+            case EventType.StatusRemoved: return $"status-removed {e.TargetUid} {e.StatusId} {e.Cause}";
+            case EventType.StatusExpired: return $"status-expired {e.TargetUid} {e.StatusId}";
+            case EventType.Ko: return $"ko {e.TargetUid}";
+            case EventType.BattleEnd: return $"battle-end {(e.Winner == Team.Player ? "player" : "enemy")}";
+            default: return e.Type.ToString();
+        }
+    }
+
+    private static List<HeroData> Heroes(GameData data, IEnumerable<string> ids) => ids.Select(data.Hero).ToList();
+
+    private static GameData Load(string dir)
+    {
+        var json = new JsonSerializerOptions { IncludeFields = true };
+        T Read<T>(string file) => JsonSerializer.Deserialize<T>(File.ReadAllText(Path.Combine(dir, file)), json);
+        return new GameData(Read<HeroCatalog>("heroes.json"), Read<ClassCatalog>("classes.json"),
+            Read<AbilityCatalog>("abilities.json"), Read<StatusCatalog>("statuses.json"));
+    }
+
+    private static string FindRepoData()
+    {
+        for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir != null; dir = dir.Parent)
+        {
+            var candidate = Path.Combine(dir.FullName, "data", "heroes.json");
+            if (File.Exists(candidate)) return Path.Combine(dir.FullName, "data");
+        }
+        throw new DirectoryNotFoundException("No encontré la carpeta data/ del repo; pásala con --data.");
+    }
+
+    private static string Arg(string[] args, string name)
+    {
+        int i = Array.IndexOf(args, name);
+        return i >= 0 && i + 1 < args.Length ? args[i + 1] : null;
     }
 
     private static void Check(bool ok, string what)
