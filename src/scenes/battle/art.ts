@@ -1,36 +1,65 @@
 import Phaser from 'phaser';
-import type { AbilityType, HeroClassId } from '../../types/game';
+import type { AbilityType, Hero, HeroClassId, PortraitCrop } from '../../types/game';
 
 /**
  * Arte de la pantalla de batalla.
  *
- * Todo lo que se ve (escenario, figuras, retratos e iconos) sale de aquí. Si un
- * archivo está listado en ART y existe en public/assets, se usa ese arte; si no,
- * se dibuja un marcador propio (siluetas y formas). Para cambiar a arte real
- * basta con dejar el PNG en public/assets y añadir su ruta en ART.
+ * Todo lo que se ve (escenario, figuras, retratos e iconos) sale de aquí. Las
+ * figuras de los héroes se declaran en data/heroes.json (`art.figure`, relativo a
+ * public/assets) y el retrato se recorta de la figura con `art.portraitCrop`.
+ * Lo que no tenga arte se dibuja con un marcador propio (siluetas y formas).
  */
 export const ART = {
   /** Fondo del escenario, 960x520 aprox. Ej.: 'assets/stages/mansion.png'. */
   stage: null as string | null,
-  /** Figura de cuerpo entero por héroe, mirando a la derecha (los enemigos se voltean). */
-  figures: {} as Partial<Record<string, string>>,
-  /** Retrato cuadrado por héroe para la fila del orden de turnos. */
+  /** Retrato cuadrado propio por héroe; si falta, se recorta de la figura. */
   portraits: {} as Partial<Record<string, string>>,
   /** Icono cuadrado por habilidad para la barra inferior. */
   abilityIcons: {} as Partial<Record<string, string>>,
 };
+
+/**
+ * Escala común de las figuras. Los PNG del juego original vienen todos a la
+ * misma escala, así que Hulk se ve más grande que Black Widow sin ajustar nada.
+ */
+export const FIGURE_SCALE = 0.72;
+/** Altura del marcador (sin arte) en píxeles de pantalla. */
+const MARKER_HEIGHT = 160;
 
 export const stageKey = 'stage';
 export const figureKey = (heroId: string) => `figure-${heroId}`;
 export const portraitKey = (heroId: string) => `portrait-${heroId}`;
 export const abilityIconKey = (abilityId: string) => `ability-${abilityId}`;
 
-/** Carga el arte real declarado en ART. Se llama desde BootScene.preload. */
-export function preloadArt(scene: Phaser.Scene): void {
+/** Recortes de retrato por héroe, tomados de data/heroes.json al precargar. */
+const portraitCrops = new Map<string, PortraitCrop>();
+
+/** Carga el arte de los héroes y el declarado en ART. Se llama desde BootScene.preload. */
+export function preloadArt(scene: Phaser.Scene, heroes: readonly Hero[]): void {
   if (ART.stage) scene.load.image(stageKey, ART.stage);
-  for (const [id, path] of Object.entries(ART.figures)) if (path) scene.load.image(figureKey(id), path);
+  for (const hero of heroes) {
+    if (!hero.art) continue;
+    scene.load.image(figureKey(hero.id), `assets/${hero.art.figure}`);
+    if (hero.art.portraitCrop) portraitCrops.set(hero.id, hero.art.portraitCrop);
+  }
   for (const [id, path] of Object.entries(ART.portraits)) if (path) scene.load.image(portraitKey(id), path);
   for (const [id, path] of Object.entries(ART.abilityIcons)) if (path) scene.load.image(abilityIconKey(id), path);
+}
+
+/** Alto en pantalla de la figura de un héroe (para colocar placas y números encima). */
+export function figureHeight(scene: Phaser.Scene, heroId: string, classId: HeroClassId): number {
+  if (scene.textures.exists(figureKey(heroId))) {
+    return scene.textures.get(figureKey(heroId)).getSourceImage().height * FIGURE_SCALE;
+  }
+  return MARKER_HEIGHT * (classId === 'bruiser' ? 1.15 : 1);
+}
+
+/** Ancho en pantalla de la figura de un héroe. */
+export function figureWidth(scene: Phaser.Scene, heroId: string): number {
+  if (scene.textures.exists(figureKey(heroId))) {
+    return scene.textures.get(figureKey(heroId)).getSourceImage().width * FIGURE_SCALE;
+  }
+  return 90;
 }
 
 export const CLASS_COLORS: Record<HeroClassId, number> = {
@@ -132,8 +161,9 @@ export function createFigure(
   const scale = classId === 'bruiser' ? 1.15 : 1;
   if (scene.textures.exists(figureKey(heroId))) {
     const img = scene.add.image(0, 0, figureKey(heroId)).setOrigin(0.5, 1).setFlipX(facingLeft);
-    img.setScale((150 * scale) / img.height);
-    box.add(img);
+    img.setScale(FIGURE_SCALE);
+    const shadow = scene.add.ellipse(0, -2, img.displayWidth * 0.7, 18, 0x000000, 0.35);
+    box.add([shadow, img]);
     return box;
   }
   const color = CLASS_COLORS[classId];
@@ -189,6 +219,21 @@ export function createPortrait(
     return box;
   }
   const color = CLASS_COLORS[classId];
+  const crop = portraitCrops.get(heroId);
+  if (crop && scene.textures.exists(figureKey(heroId))) {
+    // Fondo con el color de la clase y la cabeza recortada de la figura encima.
+    const bg = scene.add.graphics();
+    bg.fillGradientStyle(shade(color, 0.6), shade(color, 0.6), shade(color, 0.2), shade(color, 0.2), 1);
+    bg.fillRect(-size / 2, -size / 2, size, size);
+    const k = size / crop.size;
+    const img = scene.add
+      .image(-crop.x * k - size / 2, -crop.y * k - size / 2, figureKey(heroId))
+      .setOrigin(0)
+      .setScale(k)
+      .setCrop(crop.x, crop.y, crop.size, crop.size);
+    box.add([bg, img]);
+    return box;
+  }
   const g = scene.add.graphics();
   g.fillGradientStyle(shade(color, 0.6), shade(color, 0.6), shade(color, 0.25), shade(color, 0.25), 1);
   g.fillRect(-size / 2, -size / 2, size, size);

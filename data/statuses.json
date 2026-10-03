@@ -1,0 +1,236 @@
+{
+  "statuses": [
+    {
+      "id": "stun",
+      "name": "Aturdido",
+      "kind": "debuff",
+      "maxStacks": 1,
+      "description": "Pierde su siguiente turno.",
+      "modifiers": { "skipTurn": true }
+    },
+    {
+      "id": "bleed",
+      "name": "Sangrado",
+      "kind": "debuff",
+      "maxStacks": 5,
+      "description": "Pierde 4% de su vida máxima por acumulación al empezar cada turno.",
+      "modifiers": { "damageOverTimePercent": 4 }
+    },
+    {
+      "id": "burning",
+      "name": "Quemadura",
+      "kind": "debuff",
+      "maxStacks": 1,
+      "description": "Pierde 3% de su vida máxima al empezar cada turno.",
+      "modifiers": { "damageOverTimePercent": 3 }
+    },
+    {
+      "id": "regeneration",
+      "name": "Regeneración",
+      "kind": "buff",
+      "maxStacks": 1,
+      "description": "Recupera 8% de su vida máxima al empezar cada turno.",
+      "modifiers": { "healOverTimePercent": 8 }
+    },
+    {
+      "id": "attack_up",
+      "name": "Ataque +",
+      "kind": "buff",
+      "maxStacks": 1,
+      "description": "Hace 25% más de daño.",
+      "modifiers": { "damageDealtPercent": 25 }
+    },
+    {
+      "id": "attack_down",
+      "name": "Ataque −",
+      "kind": "debuff",
+      "maxStacks": 1,
+      "description": "Hace 25% menos de daño.",
+      "modifiers": { "damageDealtPercent": -25 }
+    },
+    {
+      "id": "defense_up",
+      "name": "Defensa +",
+      "kind": "buff",
+      "maxStacks": 1,
+      "description": "Defensa ×1.5.",
+      "modifiers": { "defensePercent": 50 }
+    },
+    {
+      "id": "defense_down",
+      "name": "Defensa −",
+      "kind": "debuff",
+      "maxStacks": 1,
+      "description": "Defensa ×0.6.",
+      "modifiers": { "defensePercent": -40 }
+    },
+    {
+      "id": "accuracy_up",
+      "name": "Precisión +",
+      "kind": "buff",
+      "maxStacks": 1,
+      "description": "+15 de precisión.",
+      "modifiers": { "accuracy": 15 }
+    },
+    {
+      "id": "accuracy_down",
+      "name": "Precisión −",
+      "kind": "debuff",
+      "maxStacks": 1,
+      "description": "−25 de precisión.",
+      "modifiers": { "accuracy": -25 }
+    },
+    {
+      "id": "lock_on",
+      "name": "Fijado",
+      "kind": "debuff",
+      "maxStacks": 1,
+      "description": "Los ataques contra él no fallan.",
+      "modifiers": { "attacksCannotMiss": true }
+    },
+    {
+      "id": "deflector_shield",
+      "name": "Escudo deflector",
+      "kind": "buff",
+      "maxStacks": 1,
+      "description": "Recibe 30% menos de daño.",
+      "modifiers": { "damageTakenPercent": -30 }
+    },
+    {
+      "id": "unibeam_focus",
+      "name": "Foco del Unirrayo",
+      "kind": "debuff",
+      "maxStacks": 1,
+      "description": "Recibe 25% más de daño.",
+      "modifiers": { "damageTakenPercent": 25 }
+    },
+    {
+      "id": "might_of_mjolnir",
+      "name": "Poder de Mjolnir",
+      "kind": "buff",
+      "maxStacks": 3,
+      "description": "Hace 10% más de daño por acumulación (máx. 3).",
+      "modifiers": { "damageDealtPercent": 10 }
+    },
+    {
+      "id": "strengthened",
+      "name": "Fortalecido",
+      "kind": "buff",
+      "maxStacks": 1,
+      "description": "Hace 25% más de daño.",
+      "modifiers": { "damageDealtPercent": 25 }
+    },
+    {
+      "id": "hulk_up",
+      "name": "Hulk se crece",
+      "kind": "buff",
+      "maxStacks": 3,
+      "description": "Hace 15% más de daño por acumulación (máx. 3). Furia Desatada las consume.",
+      "modifiers": { "damageDealtPercent": 15 }
+    },
+    {
+      "id": "staggered",
+      "name": "Tambaleante",
+      "kind": "debuff",
+      "maxStacks": 1,
+      "description": "−10 de precisión y −15 de evasión.",
+      "modifiers": { "accuracy": -10, "evasion": -15 }
+    },
+    {
+      "id": "dizzy",
+      "name": "Mareado",
+      "kind": "debuff",
+      "maxStacks": 1,
+      "description": "−25 de precisión.",
+      "modifiers": { "accuracy": -25 }
+    },
+    {
+      "id": "target_focus",
+      "name": "En la mira",
+      "kind": "debuff",
+      "maxStacks": 1,
+      "description": "Recibe 20% más de daño.",
+      "modifiers": { "damageTakenPercent": 20 }
+    },
+    {
+      "id": "shield_guard",
+      "name": "Guardia de escudo",
+      "kind": "buff",
+      "maxStacks": 1,
+      "description": "Recibe 50% menos de daño y devuelve 25% del golpe a quien le ataque cuerpo a cuerpo.",
+      "modifiers": { "damageTakenPercent": -50, "counterPercent": 25 }
+    },
+    {
+      "id": "combo_setup",
+      "name": "Combo preparado",
+      "kind": "debuff",
+      "maxStacks": 1,
+      "description": "Los ataques que explotan combos le hacen 50% más de daño y lo consumen.",
+      "modifiers": {}
+    },
+    {
+      "id": "incapacitated",
+      "name": "Incapacitado",
+      "kind": "debuff",
+      "maxStacks": 1,
+      "description": "No puede esquivar ni contraatacar.",
+      "modifiers": { "ignoreEvasion": true, "noCounter": true }
+    },
+    {
+      "id": "weakened",
+      "name": "Debilitado",
+      "kind": "debuff",
+      "maxStacks": 1,
+      "description": "Hace 25% menos de daño.",
+      "modifiers": { "damageDealtPercent": -25 }
+    },
+    {
+      "id": "targeted",
+      "name": "Marcado",
+      "kind": "debuff",
+      "maxStacks": 1,
+      "description": "Recibe 30% más de daño.",
+      "modifiers": { "damageTakenPercent": 30 }
+    },
+    {
+      "id": "widowmaker",
+      "name": "Viuda Negra",
+      "kind": "buff",
+      "maxStacks": 1,
+      "description": "+50 de probabilidad de crítico.",
+      "modifiers": { "critChance": 50 }
+    },
+    {
+      "id": "ravaged",
+      "name": "Desgarrado",
+      "kind": "debuff",
+      "maxStacks": 1,
+      "description": "Defensa −30%.",
+      "modifiers": { "defensePercent": -30 }
+    },
+    {
+      "id": "cornered",
+      "name": "Acorralado",
+      "kind": "debuff",
+      "maxStacks": 1,
+      "description": "−20 de evasión.",
+      "modifiers": { "evasion": -20 }
+    },
+    {
+      "id": "tenderized",
+      "name": "Ablandado",
+      "kind": "debuff",
+      "maxStacks": 1,
+      "description": "Recibe 20% más de daño.",
+      "modifiers": { "damageTakenPercent": 20 }
+    },
+    {
+      "id": "remove_buffs",
+      "name": "Quitar mejoras",
+      "kind": "instant",
+      "maxStacks": 1,
+      "description": "Elimina todas las mejoras del objetivo.",
+      "modifiers": {}
+    }
+  ]
+}
