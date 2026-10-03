@@ -1,0 +1,13 @@
+{
+  "name": "@maa/shared",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Tipos de los datos y motor de combate, sin dependencias de interfaz. Lo usan el servidor y la web.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  }
+}

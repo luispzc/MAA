@@ -1,33 +1,35 @@
 {
   "name": "maa",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Recreación del RPG por turnos Marvel: Avengers Alliance",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "shared",
+    "server",
+    "web"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build",
-    "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
+    "dev": "concurrently -k -n server,web -c blue,magenta \"npm run dev -w @maa/server\" \"npm run dev -w @maa/web\"",
+    "build": "npm run typecheck && npm run build -w @maa/web",
+    "start": "npm run start -w @maa/server",
+    "typecheck": "npm run typecheck --workspaces",
     "test": "vitest run"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/luispzc/MAA.git"
   },
-  "keywords": [],
   "author": "luispzc",
   "license": "UNLICENSED",
   "bugs": {
     "url": "https://github.com/luispzc/MAA/issues"
   },
   "homepage": "https://github.com/luispzc/MAA#readme",
-  "dependencies": {
-    "phaser": "^3.90.0"
-  },
   "devDependencies": {
+    "@types/node": "^22.19.0",
+    "concurrently": "^10.0.5",
     "typescript": "^7.0.2",
-    "vite": "^8.3.1",
     "vitest": "^5.0.2"
-  },
-  "private": true,
-  "type": "module"
+  }
 }

@@ -1,10 +1,14 @@
 # MAA
 
-Recreación del RPG por turnos **Marvel: Avengers Alliance** hecha con TypeScript, [Phaser 3](https://phaser.io/) y [Vite](https://vitejs.dev/).
+Recreación del RPG por turnos **Marvel: Avengers Alliance** para web, todo en TypeScript:
+
+- **web/**: el juego en el navegador, hecho con [React](https://react.dev/) y [Vite](https://vitejs.dev/). El escenario de la batalla (figuras y animaciones) lo dibuja [Phaser 3](https://phaser.io/) dentro de un componente de React; el resto de la interfaz es React.
+- **server/**: API en [Fastify](https://fastify.dev/) que sirve los datos del juego (`/data`) y el arte (`/assets`). La web no lee los JSON: los pide al servidor.
+- **shared/**: tipos de los datos y motor de combate, sin interfaz. Lo usan la web y el servidor.
 
 ## Requisitos
 
-- Node.js 20 o superior
+- Node.js 22 o superior
 - npm
 
 ## Empezar
@@ -14,35 +18,61 @@ npm install
 npm run dev
 ```
 
-Abre la URL que muestra Vite (por defecto http://localhost:5173). Deberías ver una batalla 3 contra 3 (Iron Man, Captain America y Thor contra Hulk, Wolverine y Black Widow) con el arte del juego original. Elige una habilidad abajo (pasa el ratón por encima para ver su ficha) y, si pide objetivo, haz clic en el enemigo o aliado.
+`npm run dev` levanta el servidor (http://127.0.0.1:3001) y la web (http://localhost:5173) a la vez. Abre la web: Vite le pasa al servidor las peticiones a `/api` y `/assets`. Deberías ver una batalla 3 contra 3 (Iron Man, Captain America y Thor contra Hulk, Wolverine y Black Widow) con el arte del juego original. Elige una habilidad abajo (pasa el ratón por encima para ver su ficha) y, si pide objetivo, haz clic en el enemigo o aliado (en el escenario o en su fila del panel). Esc o clic derecho cancelan.
+
+Si editas un JSON de `/data` con el servidor corriendo, basta con recargar la página: el servidor lo vuelve a leer. Si el cambio deja los datos inválidos, sigue sirviendo la última versión buena y lo dice en la consola.
 
 ## Scripts
 
 | Comando | Qué hace |
 | --- | --- |
-| `npm run dev` | Servidor de desarrollo con recarga en caliente |
-| `npm run build` | Revisa tipos y genera la versión de producción en `dist/` |
-| `npm run preview` | Sirve la build de `dist/` |
+| `npm run dev` | Servidor y web en modo desarrollo, con recarga en caliente |
+| `npm run build` | Revisa tipos de los tres paquetes y genera la web de producción en `web/dist/` |
+| `npm start` | Servidor de producción: API, arte y la web ya construida, todo en http://127.0.0.1:3001 |
 | `npm run typecheck` | Solo revisa tipos |
-| `npm test` | Pruebas (integridad de datos, ventajas de clase y motor de combate) |
+| `npm test` | Pruebas de los tres paquetes (motor de combate, datos y API, controlador de la batalla) |
+
+`npm start` acepta `PORT` y `HOST` (por ejemplo `HOST=0.0.0.0 PORT=8080 npm start`), y `MAA_DATA_DIR` / `MAA_ASSETS_DIR` para leer datos o arte de otra carpeta.
+
+## API
+
+| Ruta | Devuelve |
+| --- | --- |
+| `GET /api/game-data` | Todo junto: `{ classes, heroes, abilities, statuses }`. Es lo que pide la web al arrancar |
+| `GET /api/classes` | Contenido de `classes.json` (`{ rules, classes }`) |
+| `GET /api/heroes` | `{ heroes }` |
+| `GET /api/heroes/:id` | El héroe con sus habilidades ya resueltas en `abilities` (404 si no existe) |
+| `GET /api/abilities?heroId=thor` | `{ abilities }`, filtradas por héroe si se pasa `heroId` |
+| `GET /api/statuses` | `{ statuses }` |
+| `GET /api/health` | `{ ok: true }` |
+| `GET /assets/...` | Archivos de `assets/` (sprites) |
+
+Los tipos de las respuestas están en `shared/src/types/api.ts`. Al arrancar, el servidor valida los datos (ids únicos, habilidades y efectos que existen, valores en rango) y no arranca si algo falla; la lista de problemas sale en la consola.
 
 ## Estructura
 
 ```
-index.html            Página que monta el juego
-data/                 Datos en JSON (clases, héroes, habilidades), compartidos con la versión Unity
-public/assets/        Sprites, sonidos y fuentes (se sirven tal cual); heroes/ tiene las figuras
-src/
-  main.ts             Configuración de Phaser y lista de escenas
-  scenes/             Escenas del juego (Boot, Battle, …)
-  core/               Lógica de juego sin dependencia de Phaser
-    combat/           Motor de combate por turnos (estado, reglas, IA, textos)
-  data/               Carga tipada de los JSON de /data
-  types/              Tipos TypeScript que describen los datos
-tests/                Pruebas con Vitest
+data/                   Datos en JSON (clases, héroes, habilidades, efectos)
+assets/                 Arte que sirve el servidor en /assets; heroes/ tiene las figuras
+shared/                 @maa/shared: lógica y tipos, sin interfaz
+  src/types/            game.ts (forma de los JSON) y api.ts (respuestas de la API)
+  src/core/             Ventajas de clase y motor de combate (estado, reglas, IA, textos)
+  tests/                Pruebas del motor
+server/                 @maa/server: API Fastify
+  src/app.ts            Rutas
+  src/data.ts           Lectura de /data (y recarga al editar)
+  src/validate.ts       Validación de los datos
+  tests/                Pruebas de los datos y de la API
+web/                    @maa/web: el juego (React + Vite)
+  src/App.tsx           Carga los datos de la API y muestra la batalla
+  src/api.ts            Cliente de la API
+  src/battle/           BattleController (estado de la pantalla, turnos de la IA), BattleScreen,
+                        escenario de Phaser (StageScene, art.ts) y textos de la interfaz (view.ts)
+  src/components/       Barra de habilidades, fila de turnos, paneles de equipo, retratos…
+  tests/                Pruebas del controlador
 ```
 
-La lógica de reglas (daño, ventajas, turnos) va en `src/core/` sin importar Phaser, para poder probarla con Vitest. Las escenas solo dibujan y reciben la entrada del jugador.
+Las reglas (daño, ventajas, turnos) van en `shared/src/core/` sin interfaz, para probarlas con Vitest. `BattleController` (web) guarda el estado de la batalla y el modo de la pantalla; los componentes de React lo leen con `useSyncExternalStore` y el escenario de Phaser se suscribe para dibujar y animar. Para añadir una pantalla nueva (selección de equipo, mapa…) basta un componente de React que pida lo que necesite a la API.
 
 ## Clases y ventajas
 
@@ -70,7 +100,7 @@ Atacar con ventaja multiplica el daño por `advantageDamageMultiplier` y con des
 - `data/abilities.json`: `{"abilities": [...]}`, las 4 habilidades de cada héroe con los valores de las fichas del juego original.
 - `data/statuses.json`: `{"statuses": [...]}`, cada efecto (Sangrado, Fijado, Escudo deflector…) con su nombre en español y sus modificadores.
 
-Los archivos usan un objeto en la raíz con arrays, campos en camelCase y sin claves dinámicas, para que Unity los lea sin adaptadores. Los tipos de cada archivo están en `src/types/game.ts`. `npm test` comprueba que los datos sean coherentes (ids únicos, referencias válidas, efectos y propiedades que existen, ciclo de clases completo).
+Los archivos usan un objeto en la raíz con arrays, campos en camelCase y sin claves dinámicas. Los tipos de cada archivo están en `shared/src/types/game.ts`. El servidor los valida al arrancar y `npm test` comprueba lo mismo y además el ciclo de clases completo.
 
 ### Habilidad
 
@@ -95,15 +125,15 @@ En `effects`, `target` es a quién se aplica: `target` (los objetivos de la habi
 
 ### Añadir un héroe
 
-1. Deja su figura (PNG con fondo transparente, mirando a la derecha) en `public/assets/heroes/<id>.png`.
+1. Deja su figura (PNG con fondo transparente, mirando a la derecha) en `assets/heroes/<id>.png`.
 2. Agrega el héroe en `heroes.json` con `art.figure` y, si quieres retrato, `art.portraitCrop` (cuadrado en píxeles del PNG donde está la cabeza).
 3. Agrega sus 4 habilidades en `abilities.json` con el mismo `heroId`.
-4. Si usa un efecto nuevo, agrégalo en `statuses.json` con sus modificadores. Si usa una propiedad nueva, hay que programarla en `src/core/combat/battle.ts` y nombrarla en `PROPERTY_INFO` (`describe.ts`).
+4. Si usa un efecto nuevo, agrégalo en `statuses.json` con sus modificadores. Si usa una propiedad nueva, hay que programarla en `shared/src/core/combat/battle.ts` y nombrarla en `PROPERTY_INFO` (`describe.ts`).
 5. `npm test`.
 
 ## Combate
 
-El motor está en `src/core/combat/` y no importa Phaser. `BattleScene` solo dibuja el estado y manda acciones.
+El motor está en `shared/src/core/combat/` y no depende de la interfaz. La web solo dibuja el estado y manda acciones.
 
 ```ts
 const state = createBattle(playerHeroes, enemyHeroes, { classes: classesData, abilityById, statusById }, seed);
