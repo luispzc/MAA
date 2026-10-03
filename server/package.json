@@ -1,0 +1,18 @@
+{
+  "name": "@maa/server",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "API que sirve los datos del juego (/data) y el arte (/assets).",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "NODE_ENV=production tsx src/index.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@fastify/static": "^10.1.5",
+    "@maa/shared": "*",
+    "fastify": "^5.12.5",
+    "tsx": "^4.23.15"
+  }
+}

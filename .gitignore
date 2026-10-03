@@ -4,3 +4,8 @@ dist/
 *.log
 .DS_Store
 .env*
+
+# Caché de Unity (la versión Unity ya no es el camino; ver PR #2)
+unity/Library/
+unity/Logs/
+unity/UserSettings/
