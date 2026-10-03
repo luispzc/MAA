@@ -1,0 +1,30 @@
+# Unity
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+*.csproj
+*.sln
+*.suo
+*.user
+*.pidb
+*.booproj
+*.unityproj
+.vs/
+.idea/
+*.apk
+*.aab
+*.unitypackage
+
+# Herramienta de verificación fuera de Unity
+Tools/CoreCheck/bin/
+Tools/CoreCheck/obj/
+!Tools/CoreCheck/CoreCheck.csproj
+
+# Copia generada de /data y /public/assets (menú MAA o al compilar)
+Assets/StreamingAssets/MAA/
+Assets/StreamingAssets/MAA.meta
