@@ -9,6 +9,14 @@ export const TEAM_SIZE = 3;
 export const STAMINA_REGEN_FRACTION = 0.1;
 /** Stamina extra (fracción de la máxima) que da Descansar. */
 export const REST_STAMINA_FRACTION = 0.25;
+/**
+ * Valor de un stat de 3 estrellas a nivel 13 en el juego original. Contra una
+ * defensa igual a este valor, el daño es el de la ficha.
+ */
+export const STAT_REFERENCE = 1431;
+/** Puntos de acierto por cada 143 de diferencia entre precisión y evasión (una estrella). */
+export const ACCURACY_POINTS_PER_STAR = 5;
+const STAR = 143;
 export const CRIT_MULTIPLIER = 1.5;
 export const DEADLY_CRIT_MULTIPLIER = 2;
 export const MIN_HIT_CHANCE = 10;
@@ -147,16 +155,18 @@ export function matchupBetween(state: BattleState, attacker: Combatant, defender
 }
 
 /**
- * Probabilidad de acertar (0 a 100) de un golpe: precisión de la habilidad más
- * los efectos del atacante, menos la evasión del defensor.
+ * Probabilidad de acertar (0 a 100) de un golpe: precisión de la ficha, más 5
+ * puntos por cada estrella de precisión del atacante sobre la evasión del
+ * defensor, más los efectos de ambos.
  */
 export function hitChance(state: BattleState, attacker: Combatant, defender: Combatant, ability: Ability): number {
   if (hasProperty(ability, 'catastrophic') || hasFlag(state, defender, 'attacksCannotMiss')) return 100;
-  const evasion = hasFlag(state, defender, 'ignoreEvasion')
-    ? 0
-    : defender.stats.evasion + sumModifier(state, defender, 'evasion');
-  const chance = ability.accuracy + sumModifier(state, attacker, 'accuracy') - evasion;
-  return Math.min(100, Math.max(MIN_HIT_CHANCE, chance));
+  const canEvade = !hasFlag(state, defender, 'ignoreEvasion');
+  const evasionStat = canEvade ? defender.stats.evasion : STAT_REFERENCE;
+  const statDiff = ((attacker.stats.accuracy - evasionStat) / STAR) * ACCURACY_POINTS_PER_STAR;
+  const evasionMods = canEvade ? sumModifier(state, defender, 'evasion') : 0;
+  const chance = ability.accuracy + statDiff + sumModifier(state, attacker, 'accuracy') - evasionMods;
+  return Math.min(100, Math.max(MIN_HIT_CHANCE, Math.round(chance)));
 }
 
 /** Probabilidad de crítico (0 a 100) de cada golpe. */
@@ -181,9 +191,10 @@ export interface DamageBreakdown {
 }
 
 /**
- * Daño de un golpe sin aplicarlo. `baseDamage` es la tirada de ese golpe; el
- * ataque escala sobre 100, la defensa mitiga con 200 / (200 + def) y luego se
- * aplican clase, crítico, efectos y propiedades de la habilidad.
+ * Daño de un golpe sin aplicarlo. `baseDamage` es la tirada de ese golpe (de la
+ * ficha, que ya incluye el ataque del héroe). La defensa mitiga con
+ * 2·REF / (REF + def), así que una defensa de 3 estrellas no cambia nada, y
+ * luego se aplican clase, crítico, efectos y propiedades de la habilidad.
  */
 export function computeDamage(
   state: BattleState,
@@ -205,10 +216,11 @@ export function damageBreakdown(
   ability?: Ability,
 ): DamageBreakdown {
   const dealt = Math.max(0.1, 1 + sumModifier(state, attacker, 'damageDealtPercent') / 100);
-  const attack = (attacker.stats.attack / 100) * dealt;
+  // El daño de la ficha ya incluye el ataque del héroe, así que solo cuentan los efectos.
+  const attack = dealt;
   let defense = defender.stats.defense * Math.max(0, 1 + sumModifier(state, defender, 'defensePercent') / 100);
   if (ability && hasProperty(ability, 'adamantium')) defense *= 1 - ADAMANTIUM_DEFENSE_IGNORED;
-  const mitigation = 200 / (200 + defense);
+  const mitigation = (2 * STAT_REFERENCE) / (STAT_REFERENCE + defense);
   const classMod = getDamageMultiplier(state.classes.rules, matchupBetween(state, attacker, defender));
   const critMod = crit ? (ability && hasProperty(ability, 'deadly_crits') ? DEADLY_CRIT_MULTIPLIER : CRIT_MULTIPLIER) : 1;
   const exploit = ability ? exploitMultiplier(attacker, defender, ability) : 1;

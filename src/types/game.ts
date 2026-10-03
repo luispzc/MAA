@@ -34,11 +34,10 @@ export interface HeroStats {
   health: number;
   /** Stamina máxima. Las habilidades cuestan un porcentaje de ella. */
   stamina: number;
-  /** Escala el daño sobre 100. */
+  /** Valores reales a nivel 13 del juego original (1144 = 1 estrella … 1717 = 5). */
   attack: number;
-  /** Mitiga el daño con 200 / (200 + defensa). */
   defense: number;
-  /** Puntos que se restan a la precisión de la habilidad que le ataca. */
+  accuracy: number;
   evasion: number;
 }
 

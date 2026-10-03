@@ -6,11 +6,12 @@
       "classId": "bruiser",
       "description": "Cuanto más se enfada, más fuerte golpea.",
       "baseStats": {
-        "health": 9600,
-        "stamina": 100,
-        "attack": 110,
-        "defense": 90,
-        "evasion": 0
+        "health": 7868,
+        "stamina": 6438,
+        "attack": 1574,
+        "defense": 1574,
+        "accuracy": 1144,
+        "evasion": 1144
       },
       "abilityIds": [
         "hulk_rage_punch",
@@ -33,11 +34,12 @@
       "classId": "blaster",
       "description": "Armadura de alta tecnología con repulsores y misiles.",
       "baseStats": {
-        "health": 7200,
-        "stamina": 100,
-        "attack": 105,
-        "defense": 70,
-        "evasion": 5
+        "health": 6438,
+        "stamina": 6438,
+        "attack": 1574,
+        "defense": 1574,
+        "accuracy": 1431,
+        "evasion": 1288
       },
       "abilityIds": [
         "iron_man_repulsor_ray",
@@ -60,11 +62,12 @@
       "classId": "tactician",
       "description": "Líder nato; su escudo protege y ataca.",
       "baseStats": {
-        "health": 8000,
-        "stamina": 100,
-        "attack": 100,
-        "defense": 100,
-        "evasion": 5
+        "health": 7153,
+        "stamina": 7153,
+        "attack": 1431,
+        "defense": 1431,
+        "accuracy": 1431,
+        "evasion": 1431
       },
       "abilityIds": [
         "cap_shield_bash",
@@ -87,11 +90,12 @@
       "classId": "scrapper",
       "description": "Garras de adamantium y factor de curación.",
       "baseStats": {
-        "health": 8200,
-        "stamina": 100,
-        "attack": 110,
-        "defense": 80,
-        "evasion": 10
+        "health": 7153,
+        "stamina": 6438,
+        "attack": 1717,
+        "defense": 1431,
+        "accuracy": 1431,
+        "evasion": 1288
       },
       "abilityIds": [
         "wolverine_adamantium_claws",
@@ -114,11 +118,12 @@
       "classId": "infiltrator",
       "description": "Espía experta en combate y sabotaje.",
       "baseStats": {
-        "health": 6800,
-        "stamina": 100,
-        "attack": 100,
-        "defense": 65,
-        "evasion": 15
+        "health": 6438,
+        "stamina": 7868,
+        "attack": 1288,
+        "defense": 1288,
+        "accuracy": 1431,
+        "evasion": 1717
       },
       "abilityIds": [
         "widow_martial_arts_combo",
@@ -138,14 +143,15 @@
     {
       "id": "thor",
       "name": "Thor",
-      "classId": "generalist",
+      "classId": "bruiser",
       "description": "Dios del trueno, maneja a Mjolnir.",
       "baseStats": {
-        "health": 8800,
-        "stamina": 100,
-        "attack": 105,
-        "defense": 85,
-        "evasion": 5
+        "health": 7868,
+        "stamina": 6438,
+        "attack": 1574,
+        "defense": 1431,
+        "accuracy": 1431,
+        "evasion": 1288
       },
       "abilityIds": [
         "thor_hammer_throw",

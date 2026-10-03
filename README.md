@@ -118,8 +118,8 @@ Con la misma semilla la batalla es idéntica (útil para tests y repeticiones).
 
 **Golpes.** Cada golpe de una habilidad se resuelve por separado:
 
-- Acierto: `accuracy` de la habilidad + precisión de los efectos − evasión del objetivo (%), mínimo 10%. Contra un objetivo Fijado o con un ataque Catastrófico, siempre acierta.
-- Daño: tirada entre `min/hits` y `max/hits` × `ataque / 100` × `200 / (200 + defensa)` × ventaja de clase × crítico × efectos y propiedades.
+- Acierto: `accuracy` de la ficha + 5 puntos por cada estrella (143) de precisión del atacante sobre la evasión del defensor + efectos (%), mínimo 10%. Contra un objetivo Fijado o con un ataque Catastrófico, siempre acierta.
+- Daño: tirada entre `min/hits` y `max/hits` × `2·1431 / (1431 + defensa)` × ventaja de clase × crítico × efectos y propiedades. El daño de la ficha ya incluye el ataque del héroe, así que contra una defensa de 3 estrellas (1431) sale tal cual.
 - Crítico: `critChance` de la habilidad + efectos. Hace x1.5 (x2 con Críticos letales).
 - Los efectos sobre el objetivo solo entran si al menos un golpe acierta, y cada uno tira su `chance`.
 
@@ -140,4 +140,6 @@ Con la misma semilla la batalla es idéntica (útil para tests y repeticiones).
 
 **Efectos** (`data/statuses.json`). Cada uno define `kind` (`buff`, `debuff` o `instant`), `maxStacks` y `modifiers`, todos por acumulación: `damageDealtPercent`, `damageTakenPercent`, `defensePercent`, `accuracy`, `evasion`, `critChance`, `damageOverTimePercent`, `healOverTimePercent`, `skipTurn`, `attacksCannotMiss`, `ignoreEvasion`, `noCounter` y `counterPercent` (devuelve ese % del golpe a quien le ataque cuerpo a cuerpo). Un efecto nuevo que solo combine estos modificadores no necesita código. La duración cuenta turnos propios del afectado; un efecto que el héroe se pone a sí mismo no gasta el turno en que lo usa.
 
-**Qué es del juego original y qué es provisional.** De las fichas salen coste, objetivo, golpes, acierto, crítico, cooldown, tipo, propiedades, efectos y, cuando la ficha lo trae, el daño y la duración. Son provisionales: la vida, ataque, defensa y evasión de cada héroe, el daño de las habilidades marcadas con `damageEstimated`, las duraciones que la ficha no indica y los números de cada efecto (cuánto sube, baja o quita). Las bonificaciones especiales de clase (`advantageBonus` en `classes.json`) todavía no se aplican; solo el multiplicador de daño.
+**Stats de los héroes.** Son los del juego original a nivel 13, sacados de las estrellas (1 a 5) de la wiki: vida y stamina 5723 / 6438 / 7153 / 7868 / 8584, y ataque, defensa, precisión y evasión 1144 / 1288 / 1431 / 1574 / 1717. La clase es la del uniforme por defecto.
+
+**Qué es del juego original y qué es provisional.** De las fichas y la wiki salen stats, clase, coste, objetivo, golpes, acierto, crítico, cooldown, tipo, propiedades, efectos y, cuando la ficha lo trae, el daño y la duración. Son provisionales: el daño de las habilidades marcadas con `damageEstimated` (la wiki tampoco lo trae), las duraciones que la ficha no indica, los números de cada efecto (cuánto sube, baja o quita) y las pasivas de cada héroe, que aún no se aplican. Las bonificaciones especiales de clase (`advantageBonus` en `classes.json`) todavía no se aplican; solo el multiplicador de daño.

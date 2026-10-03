@@ -12,6 +12,7 @@ import {
   REST_ABILITY,
   staminaCost,
   type BattleState,
+  STAT_REFERENCE as REF,
   type CombatData,
 } from '../../src/core/combat';
 import type { Ability, AbilityEffect, Hero, HeroClassId, HeroStats } from '../../src/types/game';
@@ -49,8 +50,9 @@ function effect(id: string, duration: number, overrides: Partial<AbilityEffect> 
 }
 
 /**
- * Héroe de prueba: ataque 100, defensa 0 y sin evasión para que el daño sea
- * exacto. Las habilidades extra se registran en el CombatData de prueba.
+ * Héroe de prueba: todos los stats de combate en el valor de referencia (3
+ * estrellas), así el daño y el acierto son exactamente los de la ficha. Las
+ * habilidades extra se registran en el CombatData de prueba.
  */
 function hero(id: string, opts: { classId?: HeroClassId; stats?: Partial<HeroStats>; abilities?: Ability[] } = {}): Hero {
   const abilities = opts.abilities ?? [HIT];
@@ -60,7 +62,7 @@ function hero(id: string, opts: { classId?: HeroClassId; stats?: Partial<HeroSta
     name: id,
     classId: opts.classId ?? 'generalist',
     description: '',
-    baseStats: { health: 1000, stamina: 100, attack: 100, defense: 0, evasion: 0, ...opts.stats },
+    baseStats: { health: 1000, stamina: 100, attack: REF, defense: REF, accuracy: REF, evasion: REF, ...opts.stats },
     abilityIds: abilities.map((a) => a.id),
   };
 }
@@ -97,12 +99,12 @@ describe('daño y ventajas de clase', () => {
     expect(computeDamage(s, getCombatant(s, 'enemy-0'), getCombatant(s, 'player-0'), 100, false)).toBe(100);
   });
 
-  it('el ataque escala sobre 100, la defensa mitiga con 200 / (200 + def) y el crítico hace x1.5', () => {
-    const s = battle([hero('a', { stats: { attack: 150 } })], [hero('b', { stats: { defense: 200 } })]);
+  it('la defensa mitiga con 2·REF / (REF + def) y el crítico hace x1.5; el ataque ya viene en la ficha', () => {
+    const s = battle([hero('a', { stats: { attack: 1717 } })], [hero('b', { stats: { defense: 1717 } }), hero('c', { stats: { defense: 1144 } })]);
     const a = getCombatant(s, 'player-0');
-    const b = getCombatant(s, 'enemy-0');
-    expect(computeDamage(s, a, b, 100, false)).toBe(75);
-    expect(computeDamage(s, a, b, 100, true)).toBe(113);
+    expect(computeDamage(s, a, getCombatant(s, 'enemy-0'), 100, false)).toBe(91);
+    expect(computeDamage(s, a, getCombatant(s, 'enemy-0'), 100, true)).toBe(136);
+    expect(computeDamage(s, a, getCombatant(s, 'enemy-1'), 100, false)).toBe(111);
   });
 
   it('el daño de la ficha es el total y se reparte entre los golpes', () => {
@@ -112,12 +114,15 @@ describe('daño y ventajas de clase', () => {
     expect(damages(events)).toEqual([100, 100]);
   });
 
-  it('acierto = precisión de la habilidad − evasión del objetivo, con un mínimo de 10%', () => {
-    const s = battle([hero('a')], [hero('b', { stats: { evasion: 30 } })]);
+  it('acierto = ficha ± 5 por estrella de precisión contra evasión, con un mínimo de 10%', () => {
+    const s = battle([hero('a')], [hero('b', { stats: { evasion: 1717 } })]);
     const a = getCombatant(s, 'player-0');
     const b = getCombatant(s, 'enemy-0');
-    expect(hitChance(s, a, b, ability({ accuracy: 80 }))).toBe(50);
-    b.stats.evasion = 500;
+    expect(hitChance(s, a, b, ability({ accuracy: 80 }))).toBe(70);
+    a.stats.accuracy = 1717;
+    b.stats.evasion = 1144;
+    expect(hitChance(s, a, b, ability({ accuracy: 60 }))).toBe(80);
+    b.stats.evasion = 100000;
     expect(hitChance(s, a, b, ability({ accuracy: 80 }))).toBe(10);
   });
 
@@ -139,7 +144,7 @@ describe('daño y ventajas de clase', () => {
   });
 
   it('un golpe que falla genera un evento miss y no hace daño', () => {
-    const s = battle([hero('a', { abilities: [ability({ accuracy: 0 })] })], [hero('b', { stats: { evasion: 1000 }, abilities: [WAIT] })]);
+    const s = battle([hero('a', { abilities: [ability({ accuracy: 0 })] })], [hero('b', { stats: { evasion: 100000 }, abilities: [WAIT] })]);
     let misses = 0;
     for (let i = 0; i < 20; i++) {
       const events = performAction(s, { actorUid: 'player-0', abilityId: 'hit', targetUid: 'enemy-0' });
@@ -271,44 +276,45 @@ describe('efectos', () => {
 
   it('un buff propio no pierde duración en el turno en que se aplica', () => {
     const guard = ability({ id: 'guard', type: 'buff', target: 'self', damage: null, hits: 0, effects: [effect('defense_up', 1)] });
-    const s = battle([hero('a', { abilities: [guard], stats: { defense: 200 } })], [hero('b')]);
+    const s = battle([hero('a', { abilities: [guard] })], [hero('b')]);
     performAction(s, { actorUid: 'player-0', abilityId: 'guard' });
     const events = performAction(s, { actorUid: 'enemy-0', abilityId: 'hit', targetUid: 'player-0' });
-    // Defensa 200 x1.5 = 300 → 100 * 200/500 = 40 (sin el buff serían 50).
-    expect(damages(events)).toEqual([40]);
+    // Defensa x1.5 → 100 × 2·REF / (REF + 1.5·REF) = 80 (sin el buff serían 100).
+    expect(damages(events)).toEqual([80]);
     performAction(s, { actorUid: 'player-0', abilityId: 'guard' });
     expect(getCombatant(s, 'player-0').statuses.map((x) => x.id)).toEqual(['defense_up']);
   });
 
   it('modificadores de daño hecho, daño recibido y defensa', () => {
-    const s = battle([hero('a')], [hero('b', { stats: { defense: 200 } })]);
+    const s = battle([hero('a')], [hero('b')]);
     const a = getCombatant(s, 'player-0');
     const b = getCombatant(s, 'enemy-0');
     a.statuses = [{ id: 'attack_up', turnsLeft: 1, stacks: 1 }];
-    expect(computeDamage(s, a, b, 100, false)).toBe(63); // 125 * 0.5
+    expect(computeDamage(s, a, b, 100, false)).toBe(125);
     a.statuses = [{ id: 'weakened', turnsLeft: 1, stacks: 1 }];
-    expect(computeDamage(s, a, b, 100, false)).toBe(38); // 75 * 0.5
+    expect(computeDamage(s, a, b, 100, false)).toBe(75);
     a.statuses = [{ id: 'might_of_mjolnir', turnsLeft: 1, stacks: 3 }];
-    expect(computeDamage(s, a, b, 100, false)).toBe(65); // 130 * 0.5
+    expect(computeDamage(s, a, b, 100, false)).toBe(130);
     a.statuses = [];
     b.statuses = [{ id: 'defense_down', turnsLeft: 1, stacks: 1 }];
-    expect(computeDamage(s, a, b, 100, false)).toBe(63); // def 120 → 200/320
+    expect(computeDamage(s, a, b, 100, false)).toBe(125); // defensa 0.6·REF → 2/1.6
     b.statuses = [{ id: 'target_focus', turnsLeft: 1, stacks: 1 }];
-    expect(computeDamage(s, a, b, 100, false)).toBe(60); // 50 * 1.2
+    expect(computeDamage(s, a, b, 100, false)).toBe(120);
     b.statuses = [{ id: 'deflector_shield', turnsLeft: 1, stacks: 1 }];
-    expect(computeDamage(s, a, b, 100, false)).toBe(35); // 50 * 0.7
+    expect(computeDamage(s, a, b, 100, false)).toBe(70);
   });
 
   it('precisión y evasión de los efectos cambian el acierto', () => {
-    const s = battle([hero('a')], [hero('b', { stats: { evasion: 10 } })]);
+    const s = battle([hero('a')], [hero('b', { stats: { evasion: 1717 } })]);
     const a = getCombatant(s, 'player-0');
     const b = getCombatant(s, 'enemy-0');
     const shot = ability({ accuracy: 80 });
     a.statuses = [{ id: 'dizzy', turnsLeft: 1, stacks: 1 }];
-    expect(hitChance(s, a, b, shot)).toBe(45);
+    expect(hitChance(s, a, b, shot)).toBe(45); // 80 − 10 por evasión − 25
     a.statuses = [];
     b.statuses = [{ id: 'cornered', turnsLeft: 1, stacks: 1 }];
     expect(hitChance(s, a, b, shot)).toBe(90);
+    // Incapacitado: su evasión no cuenta, queda como un objetivo de referencia.
     b.statuses = [{ id: 'incapacitated', turnsLeft: 1, stacks: 1 }];
     expect(hitChance(s, a, b, shot)).toBe(80);
     b.statuses = [{ id: 'lock_on', turnsLeft: 1, stacks: 1 }];
@@ -332,7 +338,7 @@ describe('efectos', () => {
 
   it('los efectos sobre el objetivo no entran si todos los golpes fallan; los propios sí', () => {
     const stunHit = ability({ id: 'stun-hit', accuracy: 0, effects: [effect('stun', 1), effect('attack_up', 2, { target: 'self' })] });
-    const s = battle([hero('a', { abilities: [stunHit] })], [hero('b', { stats: { evasion: 1000 } })], 3);
+    const s = battle([hero('a', { abilities: [stunHit] })], [hero('b', { stats: { evasion: 100000 } })], 3);
     const events = performAction(s, { actorUid: 'player-0', abilityId: 'stun-hit', targetUid: 'enemy-0' });
     expect(events.some((e) => e.type === 'miss')).toBe(true);
     expect(events.filter((e) => e.type === 'status-applied')).toEqual([
@@ -369,9 +375,10 @@ describe('propiedades especiales', () => {
   });
 
   it('adamantium ignora la mitad de la defensa', () => {
-    const s = battle([hero('a')], [hero('b', { stats: { defense: 200 } })]);
+    const s = battle([hero('a')], [hero('b')]);
     const claws = ability({ properties: ['adamantium'] });
-    expect(computeDamage(s, getCombatant(s, 'player-0'), getCombatant(s, 'enemy-0'), 100, false, claws)).toBe(67);
+    // Defensa REF/2 → 100 × 2 / 1.5.
+    expect(computeDamage(s, getCombatant(s, 'player-0'), getCombatant(s, 'enemy-0'), 100, false, claws)).toBe(133);
   });
 
   it('explota combos: +50% contra Combo preparado, lo consume y lo vuelve a poner', () => {
