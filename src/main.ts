@@ -3,7 +3,7 @@ import { BootScene } from './scenes/BootScene';
 import { BattleScene } from './scenes/BattleScene';
 
 export const GAME_WIDTH = 960;
-export const GAME_HEIGHT = 600;
+export const GAME_HEIGHT = 640;
 
 new Phaser.Game({
   type: Phaser.AUTO,

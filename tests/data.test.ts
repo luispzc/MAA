@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { abilities, abilityById, classesData, heroById, heroes } from '../src/data';
+import { abilities, abilityById, classesData, heroById, heroes, statusById, statuses } from '../src/data';
+import { PROPERTY_INFO } from '../src/core/combat';
 import { getDamageMultiplier, getMatchup } from '../src/core/classAdvantage';
 
 const { classes, rules } = classesData;
@@ -56,6 +57,41 @@ describe('héroes y habilidades', () => {
       if (a.damage) expect(a.damage.min).toBeLessThanOrEqual(a.damage.max);
       for (const e of a.effects) expect(e.chance).toBeGreaterThanOrEqual(0);
       for (const e of a.effects) expect(e.chance).toBeLessThanOrEqual(1);
+      for (const e of a.effects) expect(e.stacks).toBeGreaterThanOrEqual(1);
+      expect(a.accuracy).toBeGreaterThanOrEqual(0);
+      expect(a.accuracy).toBeLessThanOrEqual(100);
+      expect(a.critChance).toBeGreaterThanOrEqual(0);
+      expect(a.staminaCostPercent).toBeGreaterThanOrEqual(0);
+      expect(a.staminaCostPercent).toBeLessThanOrEqual(100);
+      expect(a.damage === null, a.id).toBe(a.hits === 0);
+    }
+  });
+
+  it('cada héroe tiene sus 4 habilidades con niveles de desbloqueo 1, 2, 6 y 9', () => {
+    for (const hero of heroes) {
+      expect(hero.abilityIds.map((id) => abilityById.get(id)!.unlockLevel), hero.id).toEqual([1, 2, 6, 9]);
+    }
+  });
+
+  it('las propiedades especiales existen en el motor', () => {
+    for (const a of abilities) {
+      for (const p of a.properties) expect(Object.keys(PROPERTY_INFO), `${a.id} → ${p}`).toContain(p);
+    }
+  });
+
+  it('una acción rápida tiene cooldown, para que no se pueda encadenar sin fin', () => {
+    for (const a of abilities.filter((x) => x.properties.includes('quick_action'))) {
+      expect(a.cooldown, a.id).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('efectos', () => {
+  it('los ids son únicos y los efectos tienen un tipo y acumulaciones válidos', () => {
+    expect(statusById.size).toBe(statuses.length);
+    for (const s of statuses) {
+      expect(['buff', 'debuff', 'instant']).toContain(s.kind);
+      expect(s.maxStacks).toBeGreaterThanOrEqual(1);
     }
   });
 });

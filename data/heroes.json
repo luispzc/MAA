@@ -6,18 +6,27 @@
       "classId": "bruiser",
       "description": "Cuanto más se enfada, más fuerte golpea.",
       "baseStats": {
-        "health": 1400,
-        "stamina": 90,
-        "attack": 120,
-        "defense": 90,
-        "accuracy": 80,
-        "evasion": 5
+        "health": 7868,
+        "stamina": 6438,
+        "attack": 1574,
+        "defense": 1574,
+        "accuracy": 1144,
+        "evasion": 1144
       },
       "abilityIds": [
+        "hulk_rage_punch",
         "hulk_smash",
-        "hulk_thunderclap",
-        "hulk_rage"
-      ]
+        "hulk_thunder_clap",
+        "hulk_titanic_hurl"
+      ],
+      "art": {
+        "figure": "heroes/hulk.png",
+        "portraitCrop": {
+          "x": 132,
+          "y": 18,
+          "size": 78
+        }
+      }
     },
     {
       "id": "iron_man",
@@ -25,18 +34,27 @@
       "classId": "blaster",
       "description": "Armadura de alta tecnología con repulsores y misiles.",
       "baseStats": {
-        "health": 1000,
-        "stamina": 110,
-        "attack": 110,
-        "defense": 70,
-        "accuracy": 95,
-        "evasion": 10
+        "health": 6438,
+        "stamina": 6438,
+        "attack": 1574,
+        "defense": 1574,
+        "accuracy": 1431,
+        "evasion": 1288
       },
       "abilityIds": [
-        "iron_man_repulsor",
-        "iron_man_missiles",
+        "iron_man_repulsor_ray",
+        "iron_man_missile_barrage",
+        "iron_man_deflector_shield",
         "iron_man_unibeam"
-      ]
+      ],
+      "art": {
+        "figure": "heroes/iron_man.png",
+        "portraitCrop": {
+          "x": 52,
+          "y": 2,
+          "size": 66
+        }
+      }
     },
     {
       "id": "captain_america",
@@ -44,18 +62,27 @@
       "classId": "tactician",
       "description": "Líder nato; su escudo protege y ataca.",
       "baseStats": {
-        "health": 1100,
-        "stamina": 100,
-        "attack": 95,
-        "defense": 100,
-        "accuracy": 90,
-        "evasion": 15
+        "health": 7153,
+        "stamina": 7153,
+        "attack": 1431,
+        "defense": 1431,
+        "accuracy": 1431,
+        "evasion": 1431
       },
       "abilityIds": [
+        "cap_shield_bash",
+        "cap_leading_strike",
         "cap_shield_throw",
-        "cap_rally",
-        "cap_shield_bash"
-      ]
+        "cap_shield_guard"
+      ],
+      "art": {
+        "figure": "heroes/captain_america.png",
+        "portraitCrop": {
+          "x": 52,
+          "y": 0,
+          "size": 60
+        }
+      }
     },
     {
       "id": "wolverine",
@@ -63,18 +90,27 @@
       "classId": "scrapper",
       "description": "Garras de adamantium y factor de curación.",
       "baseStats": {
-        "health": 1150,
-        "stamina": 95,
-        "attack": 115,
-        "defense": 80,
-        "accuracy": 85,
-        "evasion": 20
+        "health": 7153,
+        "stamina": 6438,
+        "attack": 1717,
+        "defense": 1431,
+        "accuracy": 1431,
+        "evasion": 1288
       },
       "abilityIds": [
-        "wolverine_slash",
-        "wolverine_berserk",
-        "wolverine_healing"
-      ]
+        "wolverine_adamantium_claws",
+        "wolverine_berserker_frenzy",
+        "wolverine_savage_rend",
+        "wolverine_feral_ambush"
+      ],
+      "art": {
+        "figure": "heroes/wolverine.png",
+        "portraitCrop": {
+          "x": 92,
+          "y": 4,
+          "size": 58
+        }
+      }
     },
     {
       "id": "black_widow",
@@ -82,37 +118,55 @@
       "classId": "infiltrator",
       "description": "Espía experta en combate y sabotaje.",
       "baseStats": {
-        "health": 900,
-        "stamina": 105,
-        "attack": 100,
-        "defense": 65,
-        "accuracy": 95,
-        "evasion": 30
+        "health": 6438,
+        "stamina": 7868,
+        "attack": 1288,
+        "defense": 1288,
+        "accuracy": 1431,
+        "evasion": 1717
       },
       "abilityIds": [
+        "widow_martial_arts_combo",
         "widow_bite",
-        "widow_kick",
-        "widow_smoke"
-      ]
+        "widow_flying_kick",
+        "widow_widowmaker"
+      ],
+      "art": {
+        "figure": "heroes/black_widow.png",
+        "portraitCrop": {
+          "x": 60,
+          "y": 0,
+          "size": 60
+        }
+      }
     },
     {
       "id": "thor",
       "name": "Thor",
-      "classId": "generalist",
+      "classId": "bruiser",
       "description": "Dios del trueno, maneja a Mjolnir.",
       "baseStats": {
-        "health": 1250,
-        "stamina": 100,
-        "attack": 115,
-        "defense": 85,
-        "accuracy": 85,
-        "evasion": 10
+        "health": 7868,
+        "stamina": 6438,
+        "attack": 1574,
+        "defense": 1431,
+        "accuracy": 1431,
+        "evasion": 1288
       },
       "abilityIds": [
-        "thor_mjolnir",
-        "thor_lightning",
-        "thor_storm"
-      ]
+        "thor_hammer_throw",
+        "thor_empowering_strike",
+        "thor_inspire_bravery",
+        "thor_summon_thunder"
+      ],
+      "art": {
+        "figure": "heroes/thor.png",
+        "portraitCrop": {
+          "x": 108,
+          "y": 16,
+          "size": 74
+        }
+      }
     }
   ]
 }
